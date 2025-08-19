@@ -39,6 +39,8 @@ export function useConversation(conversationId?: string) {
       queryClient.setQueryData(['/api/conversation', conversationId, 'packages'], data.packages);
       // Refresh conversation to get updated status
       queryClient.invalidateQueries({ queryKey: ['/api/conversation', conversationId] });
+      // Also invalidate packages query to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['/api/conversation', conversationId, 'packages'] });
     },
     onError: (error, conversationId) => {
       console.error("Package generation failed for conversation", conversationId, ":", error);

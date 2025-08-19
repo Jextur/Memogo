@@ -21,9 +21,17 @@ export function PackagePreview({
 }: PackagePreviewProps) {
   const [selectedPackageId, setSelectedPackageId] = useState<string>();
 
-  const { data: packages = [], isLoading } = useQuery<TravelPackage[]>({
+  const { data: packages = [], isLoading, error } = useQuery<TravelPackage[]>({
     queryKey: ['/api/conversation', conversationId, 'packages'],
     enabled: !!conversationId,
+  });
+
+  // Debug logging
+  console.log("PackagePreview state:", { 
+    conversationId, 
+    packagesCount: packages.length, 
+    isLoading, 
+    error 
   });
 
   const getPackageGradient = (type: string) => {
