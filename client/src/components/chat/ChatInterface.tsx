@@ -16,6 +16,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ conversationId, onPackagesReady, onConversationIdChange }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const packageGenerationTriggeredRef = useRef<string | null>(null);
   
   const {
     conversation,
@@ -40,7 +41,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     if (!conversationId && !currentConversationId && !isLoading) {
       startConversation();
     }
-  }, [conversationId, currentConversationId, isLoading, startConversation]);
+  }, [conversationId, currentConversationId, isLoading]); // Remove startConversation from deps to prevent infinite loop
 
   // Notify parent of conversation ID changes
   useEffect(() => {
@@ -51,14 +52,21 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
   // Handle package generation trigger with delay to ensure conversation data is saved
   useEffect(() => {
-    if (nextStep === "generate" && !isGeneratingPackages) {
+    if (nextStep === "generate" && !isGeneratingPackages && currentConversationId) {
+      // Prevent duplicate generation for the same conversation
+      if (packageGenerationTriggeredRef.current === currentConversationId) {
+        return;
+      }
+      
       console.log("Auto-triggering package generation for conversation:", currentConversationId);
+      packageGenerationTriggeredRef.current = currentConversationId;
+      
       // Add a small delay to ensure conversation data is fully saved
       setTimeout(() => {
         generateTravelPackages();
       }, 500); // 500ms delay to allow conversation update to complete
     }
-  }, [nextStep, isGeneratingPackages, generateTravelPackages, currentConversationId]);
+  }, [nextStep, isGeneratingPackages, currentConversationId]);
 
   // Notify parent when packages are ready
   useEffect(() => {
