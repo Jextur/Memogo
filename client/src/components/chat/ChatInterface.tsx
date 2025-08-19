@@ -49,11 +49,14 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     }
   }, [currentConversationId, onConversationIdChange]);
 
-  // Handle package generation trigger
+  // Handle package generation trigger with delay to ensure conversation data is saved
   useEffect(() => {
     if (nextStep === "generate" && !isGeneratingPackages) {
       console.log("Auto-triggering package generation for conversation:", currentConversationId);
-      generateTravelPackages();
+      // Add a small delay to ensure conversation data is fully saved
+      setTimeout(() => {
+        generateTravelPackages();
+      }, 500); // 500ms delay to allow conversation update to complete
     }
   }, [nextStep, isGeneratingPackages, generateTravelPackages, currentConversationId]);
 
