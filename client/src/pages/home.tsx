@@ -78,7 +78,7 @@ export default function Home() {
               <div className="w-8 h-8 bg-brand-accent rounded-lg flex items-center justify-center">
                 <Plane className="text-brand-bg w-4 h-4" />
               </div>
-              <h1 className="text-xl font-bold text-brand-text">Travelify</h1>
+              <h1 className="text-xl font-bold text-brand-text">MemoGo</h1>
               <span className="text-xs bg-brand-accent/20 text-brand-accent px-2 py-1 rounded-full">
                 AI Travel Consultant
               </span>
@@ -100,7 +100,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Conversation + Package Generation View */}
         {currentView === "conversation" && (
@@ -135,14 +134,12 @@ export default function Home() {
           />
         )}
       </div>
-
       {/* Add POI Modal */}
       <AddPOIModal
         isOpen={showAddPOIModal}
         onClose={() => setShowAddPOIModal(false)}
         onAddPOI={handleAddPOI}
       />
-
       {/* Floating Export Button (mobile) */}
       {selectedPackage && (
         <div className="fixed bottom-6 right-6 z-40 md:hidden">
