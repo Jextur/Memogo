@@ -35,9 +35,13 @@ export function useConversation(conversationId?: string) {
   const generatePackagesMutation = useMutation({
     mutationFn: generatePackages,
     onSuccess: (data, conversationId) => {
+      console.log("Package generation successful:", data.packages.length, "packages created");
       queryClient.setQueryData(['/api/conversation', conversationId, 'packages'], data.packages);
       // Refresh conversation to get updated status
       queryClient.invalidateQueries({ queryKey: ['/api/conversation', conversationId] });
+    },
+    onError: (error, conversationId) => {
+      console.error("Package generation failed for conversation", conversationId, ":", error);
     },
   });
 

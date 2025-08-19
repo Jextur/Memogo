@@ -44,9 +44,10 @@ export function ChatInterface({ conversationId, onPackagesReady }: ChatInterface
   // Handle package generation trigger
   useEffect(() => {
     if (nextStep === "generate" && !isGeneratingPackages) {
+      console.log("Auto-triggering package generation for conversation:", currentConversationId);
       generateTravelPackages();
     }
-  }, [nextStep, isGeneratingPackages, generateTravelPackages]);
+  }, [nextStep, isGeneratingPackages, generateTravelPackages, currentConversationId]);
 
   // Notify parent when packages are ready
   useEffect(() => {
