@@ -35,68 +35,78 @@ export interface GeneratedPackage {
   itinerary: any[];
 }
 
+// Simple fallback conversation logic for when OpenAI is unavailable
+function fallbackConversation(context: ConversationContext): {
+  response: string;
+  nextStep: string;
+  options?: string[];
+  extractedInfo?: Partial<ConversationContext>;
+} {
+  const userMessage = context.messages[context.messages.length - 1]?.content.toLowerCase() || "";
+  
+  if (!context.destination && (userMessage.includes("paris") || userMessage.includes("france"))) {
+    return {
+      response: "Great choice! Paris is amazing. How many days are you planning to stay?",
+      nextStep: "question",
+      extractedInfo: { destination: "Paris, France" }
+    };
+  } else if (!context.destination && (userMessage.includes("tokyo") || userMessage.includes("japan"))) {
+    return {
+      response: "Tokyo is incredible! How many days would you like to explore Japan?",
+      nextStep: "question",
+      extractedInfo: { destination: "Tokyo, Japan" }
+    };
+  } else if (!context.destination && (userMessage.includes("london") || userMessage.includes("england") || userMessage.includes("uk"))) {
+    return {
+      response: "London is a fantastic choice! How many days are you planning to visit?",
+      nextStep: "question", 
+      extractedInfo: { destination: "London, England" }
+    };
+  } else if (!context.days && userMessage.match(/\d+\s*(day|night)/)) {
+    const days = parseInt(userMessage.match(/(\d+)/)?.[1] || "3");
+    return {
+      response: `Perfect! ${days} days in ${context.destination || "your destination"} sounds wonderful. How many people will be traveling?`,
+      nextStep: "question", 
+      extractedInfo: { days }
+    };
+  } else if (!context.people && userMessage.match(/\d+\s*(people|person|traveler)/)) {
+    const people = parseInt(userMessage.match(/(\d+)/)?.[1] || "2");
+    return {
+      response: `Excellent! For ${people} ${people === 1 ? 'person' : 'people'}. What type of experience are you looking for?`,
+      nextStep: "question",
+      options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
+      extractedInfo: { people }
+    };
+  } else if (!context.theme) {
+    let theme = "classic";
+    if (userMessage.includes("food") || userMessage.includes("dining") || userMessage.includes("culinary")) {
+      theme = "foodie";
+    } else if (userMessage.includes("budget") || userMessage.includes("cheap") || userMessage.includes("affordable")) {
+      theme = "budget";
+    }
+    return {
+      response: "Perfect! I have all the information I need. Let me create personalized travel packages for you using real places and attractions. This will take a moment...",
+      nextStep: "generate",
+      extractedInfo: { theme }
+    };
+  } else {
+    return {
+      response: "I'd love to help you plan a trip! Where would you like to go? (Try Paris, Tokyo, or London)",
+      nextStep: "question"
+    };
+  }
+}
+
 export async function continueConversation(context: ConversationContext): Promise<{
   response: string;
   nextStep: string;
   options?: string[];
   extractedInfo?: Partial<ConversationContext>;
 }> {
-  try {
-    const systemPrompt = `You are a professional AI travel consultant for Travelify. Your goal is to gather travel preferences through a natural conversation (maximum 3 questions) and then generate personalized travel packages.
+  // For now, use fallback conversation since OpenAI quota is exceeded
+  return fallbackConversation(context);
+  
 
-Current conversation context:
-- Destination: ${context.destination || "not specified"}
-- Days: ${context.days || "not specified"}
-- People: ${context.people || "not specified"}
-- Theme: ${context.theme || "not specified"}
-
-Guidelines:
-1. Ask only the most essential questions (max 3 total)
-2. Be conversational and friendly, not robotic
-3. If destination is not clear, ask for it first
-4. If days/duration is not clear, ask for it second
-5. If theme/preferences are not clear, ask for it third
-6. Once you have destination, days, and theme - indicate you're ready to generate packages
-7. Provide response options when helpful
-8. Extract any travel information mentioned by the user
-
-Respond in JSON format with:
-{
-  "response": "your conversational response",
-  "nextStep": "question|generate|complete",
-  "options": ["option1", "option2"] (optional),
-  "extractedInfo": {
-    "destination": "if mentioned",
-    "days": number (if mentioned),
-    "people": number (if mentioned),
-    "theme": "if mentioned"
-  }
-}`;
-
-    const messages = context.messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...messages
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-    return result;
-  } catch (error) {
-    console.error("OpenAI conversation error:", error);
-    return {
-      response: "I'm having trouble processing your request. Could you please try again?",
-      nextStep: "question"
-    };
-  }
 }
 
 async function fetchDestinationPOIs(destination: string): Promise<string> {
@@ -123,75 +133,72 @@ Hotels: ${hotels.slice(0, 3).map(p => `${p.name} (${p.rating}⭐)`).join(', ')}
 }
 
 export async function generateTravelPackages(request: PackageGenerationRequest): Promise<GeneratedPackage[]> {
-  try {
-    // Fetch real POI data for context
-    const poiContext = await fetchDestinationPOIs(request.destination);
+  console.log("Generating packages using Google Places data fallback for:", request.destination);
     
-    const systemPrompt = `You are an expert travel package generator. Create 3 distinct travel packages for the given requirements using real place data.
+    // Fallback package generation using real Google Places data
+    const [restaurants, attractions, hotels] = await Promise.all([
+      searchPlaces(`restaurants in ${request.destination}`),
+      searchPlaces(`attractions in ${request.destination}`),
+      searchPlaces(`hotels in ${request.destination}`)
+    ]);
 
-${poiContext}
+    const baseItinerary = Array.from({ length: request.days }, (_, i) => ({
+      day: i + 1,
+      location: request.destination,
+      title: `Day ${i + 1}: Explore ${request.destination}`,
+      description: `Discover ${request.destination} with authentic local experiences`,
+      activities: [
+        restaurants[i % restaurants.length]?.name || `Local restaurant`,
+        attractions[i % attractions.length]?.name || `Popular attraction`,
+        `Evening leisure time`
+      ]
+    }));
 
-Requirements:
-- Destination: ${request.destination}
-- Duration: ${request.days} days
-- People: ${request.people || 1}
-- Theme: ${request.theme}
-
-Generate 3 packages:
-1. Classic: Traditional/cultural focus with mid-range budget
-2. Foodie: Culinary experiences with higher budget  
-3. Budget: Essential experiences with lower budget
-
-IMPORTANT: Use the real place names provided above when creating itineraries. Reference actual restaurants, attractions, and hotels from the data.
-
-For each package, create:
-- Realistic budget (total per person in USD)
-- Detailed route through cities
-- Accommodation type
-- Number of dining experiences and attractions
-- Key highlights (4-5 items)
-- Day-by-day itinerary with REAL place names from the POI data
-
-Respond in JSON format with an array of 3 packages:
-[
-  {
-    "name": "package name",
-    "type": "classic|foodie|budget",
-    "budget": "$X,XXX",
-    "description": "brief description",
-    "route": "City1 → City2 → City3",
-    "accommodation": "accommodation type",
-    "diningCount": number,
-    "attractionCount": number,
-    "highlights": ["highlight1", "highlight2", "highlight3", "highlight4"],
-    "itinerary": [
+    return [
       {
-        "day": 1,
-        "location": "city",
-        "title": "Day 1: Title",
-        "description": "brief description",
-        "activities": ["activity1", "activity2", "activity3"]
+        name: `Classic ${request.destination}`,
+        type: "classic" as const,
+        budget: `$${800 + (request.days * 150)}`,
+        description: `Traditional sightseeing experience in ${request.destination}`,
+        route: request.destination,
+        accommodation: hotels[0]?.name || "Mid-range hotel",
+        diningCount: Math.min(restaurants.length, 8),
+        attractionCount: Math.min(attractions.length, 6),
+        highlights: attractions.slice(0, 4).map(a => a.name),
+        itinerary: baseItinerary
+      },
+      {
+        name: `Foodie ${request.destination}`,
+        type: "foodie" as const,
+        budget: `$${1200 + (request.days * 200)}`,
+        description: `Culinary-focused journey through ${request.destination}`,
+        route: request.destination,
+        accommodation: hotels[1]?.name || "Boutique hotel",
+        diningCount: Math.min(restaurants.length, 12),
+        attractionCount: Math.min(attractions.length, 4),
+        highlights: restaurants.slice(0, 4).map(r => r.name),
+        itinerary: baseItinerary.map(day => ({
+          ...day,
+          activities: [
+            restaurants[(day.day - 1) % restaurants.length]?.name || `Fine dining`,
+            restaurants[((day.day - 1) + restaurants.length/2) % restaurants.length]?.name || `Local cuisine`,
+            attractions[(day.day - 1) % attractions.length]?.name || `Cultural site`
+          ]
+        }))
+      },
+      {
+        name: `Budget ${request.destination}`,
+        type: "budget" as const,
+        budget: `$${400 + (request.days * 80)}`,
+        description: `Affordable exploration of ${request.destination}`,
+        route: request.destination,
+        accommodation: "Budget-friendly accommodation",
+        diningCount: Math.min(restaurants.length, 4),
+        attractionCount: Math.min(attractions.length, 8),
+        highlights: attractions.slice(0, 4).map(a => a.name),
+        itinerary: baseItinerary
       }
-    ]
-  }
-]`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Generate travel packages for ${request.destination}, ${request.days} days, ${request.theme} theme` }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.8,
-    });
-
-    const result = JSON.parse(response.choices[0].message.content || "[]");
-    return result.packages || result;
-  } catch (error) {
-    console.error("OpenAI package generation error:", error);
-    throw new Error("Failed to generate travel packages");
-  }
+    ];
 }
 
 export async function refineItinerary(
