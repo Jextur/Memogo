@@ -13,31 +13,46 @@ export interface GooglePlacesResult {
 
 export async function searchPlaces(query: string): Promise<GooglePlacesResult[]> {
   try {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY || "your_google_places_api_key";
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${apiKey}`;
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) {
+      throw new Error("Google Places API key not configured");
+    }
+
+    const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.types,places.location,places.currentOpeningHours,places.photos"
+      },
+      body: JSON.stringify({ 
+        textQuery: query, 
+        pageSize: 10,
+        languageCode: "en"
+      })
+    });
     
-    const response = await fetch(url);
     const data = await response.json();
     
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      throw new Error(`Google Places API error: ${data.status} - ${data.error_message || 'Unknown error'}`);
+    if (!response.ok) {
+      throw new Error(`Google Places API error: ${response.status} - ${data.error?.message || 'Unknown error'}`);
     }
     
-    if (!data.results) {
+    if (!data.places) {
       return [];
     }
     
-    return data.results.slice(0, 10).map((place: any): GooglePlacesResult => ({
-      place_id: place.place_id,
-      name: place.name,
+    return data.places.map((place: any): GooglePlacesResult => ({
+      place_id: place.id,
+      name: place.displayName?.text || place.displayName,
       rating: place.rating,
-      user_ratings_total: place.user_ratings_total,
-      price_level: place.price_level,
+      user_ratings_total: place.userRatingCount,
+      price_level: place.priceLevel,
       types: place.types,
-      address: place.formatted_address || place.vicinity,
-      location: place.geometry?.location,
-      open_now: place.opening_hours?.open_now,
-      photo_ref: place.photos?.[0]?.photo_reference,
+      address: place.formattedAddress,
+      location: place.location,
+      open_now: place.currentOpeningHours?.openNow,
+      photo_ref: place.photos?.[0]?.name,
     }));
   } catch (error) {
     console.error("Google Places search error:", error);

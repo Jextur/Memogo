@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { ChatMessage } from "@shared/schema";
+import { searchPlaces } from "./googlePlaces";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({
@@ -98,9 +99,37 @@ Respond in JSON format with:
   }
 }
 
+async function fetchDestinationPOIs(destination: string): Promise<string> {
+  try {
+    // Fetch sample POIs to provide AI with real place data context
+    const [restaurants, attractions, hotels] = await Promise.all([
+      searchPlaces(`restaurants in ${destination}`),
+      searchPlaces(`attractions in ${destination}`),
+      searchPlaces(`hotels in ${destination}`)
+    ]);
+
+    const poiContext = `
+Real places in ${destination}:
+Restaurants: ${restaurants.slice(0, 5).map(p => `${p.name} (${p.rating}⭐)`).join(', ')}
+Attractions: ${attractions.slice(0, 5).map(p => `${p.name} (${p.rating}⭐)`).join(', ')}
+Hotels: ${hotels.slice(0, 3).map(p => `${p.name} (${p.rating}⭐)`).join(', ')}
+    `;
+    
+    return poiContext;
+  } catch (error) {
+    console.error("Error fetching POI context:", error);
+    return `Destination: ${destination} (authentic POI data unavailable)`;
+  }
+}
+
 export async function generateTravelPackages(request: PackageGenerationRequest): Promise<GeneratedPackage[]> {
   try {
-    const systemPrompt = `You are an expert travel package generator. Create 3 distinct travel packages for the given requirements.
+    // Fetch real POI data for context
+    const poiContext = await fetchDestinationPOIs(request.destination);
+    
+    const systemPrompt = `You are an expert travel package generator. Create 3 distinct travel packages for the given requirements using real place data.
+
+${poiContext}
 
 Requirements:
 - Destination: ${request.destination}
@@ -110,8 +139,10 @@ Requirements:
 
 Generate 3 packages:
 1. Classic: Traditional/cultural focus with mid-range budget
-2. Foodie: Culinary experiences with higher budget
+2. Foodie: Culinary experiences with higher budget  
 3. Budget: Essential experiences with lower budget
+
+IMPORTANT: Use the real place names provided above when creating itineraries. Reference actual restaurants, attractions, and hotels from the data.
 
 For each package, create:
 - Realistic budget (total per person in USD)
@@ -119,7 +150,7 @@ For each package, create:
 - Accommodation type
 - Number of dining experiences and attractions
 - Key highlights (4-5 items)
-- Day-by-day itinerary outline (brief)
+- Day-by-day itinerary with REAL place names from the POI data
 
 Respond in JSON format with an array of 3 packages:
 [
