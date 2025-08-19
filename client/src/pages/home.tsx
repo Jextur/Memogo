@@ -79,9 +79,7 @@ export default function Home() {
                 <Plane className="text-brand-bg w-4 h-4" />
               </div>
               <h1 className="text-xl font-bold text-brand-text">MemoGo</h1>
-              <span className="text-xs bg-brand-accent/20 text-brand-accent px-2 py-1 rounded-full">
-                AI Travel Consultant
-              </span>
+              <span className="bg-brand-accent/20 text-brand-accent px-2 py-1 rounded-full text-[14px] font-semibold">Create Your Own Memory ✨</span>
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <Button variant="ghost" className="text-brand-mute hover:text-brand-accent">
