@@ -36,11 +36,12 @@ export function useConversation(conversationId?: string) {
     mutationFn: generatePackages,
     onSuccess: (data, conversationId) => {
       console.log("Package generation successful:", data.packages.length, "packages created");
+      // Set the packages data directly in cache
       queryClient.setQueryData(['/api/conversation', conversationId, 'packages'], data.packages);
+      // Force refetch of packages query to ensure UI updates immediately
+      queryClient.refetchQueries({ queryKey: ['/api/conversation', conversationId, 'packages'] });
       // Refresh conversation to get updated status
       queryClient.invalidateQueries({ queryKey: ['/api/conversation', conversationId] });
-      // Also invalidate packages query to ensure UI updates
-      queryClient.invalidateQueries({ queryKey: ['/api/conversation', conversationId, 'packages'] });
     },
     onError: (error, conversationId) => {
       console.error("Package generation failed for conversation", conversationId, ":", error);

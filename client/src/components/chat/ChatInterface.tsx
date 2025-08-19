@@ -10,9 +10,10 @@ import { Plane, Bot, User, Send } from "lucide-react";
 interface ChatInterfaceProps {
   conversationId?: string;
   onPackagesReady?: () => void;
+  onConversationIdChange?: (id: string) => void;
 }
 
-export function ChatInterface({ conversationId, onPackagesReady }: ChatInterfaceProps) {
+export function ChatInterface({ conversationId, onPackagesReady, onConversationIdChange }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -40,6 +41,13 @@ export function ChatInterface({ conversationId, onPackagesReady }: ChatInterface
       startConversation();
     }
   }, [conversationId, currentConversationId, isLoading, startConversation]);
+
+  // Notify parent of conversation ID changes
+  useEffect(() => {
+    if (currentConversationId && onConversationIdChange) {
+      onConversationIdChange(currentConversationId);
+    }
+  }, [currentConversationId, onConversationIdChange]);
 
   // Handle package generation trigger
   useEffect(() => {

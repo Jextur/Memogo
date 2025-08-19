@@ -24,6 +24,8 @@ export function PackagePreview({
   const { data: packages = [], isLoading, error } = useQuery<TravelPackage[]>({
     queryKey: ['/api/conversation', conversationId, 'packages'],
     enabled: !!conversationId,
+    staleTime: 0, // Override global staleTime to allow immediate refetching
+    refetchOnMount: true,
   });
 
   // Debug logging
@@ -31,7 +33,8 @@ export function PackagePreview({
     conversationId, 
     packagesCount: packages.length, 
     isLoading, 
-    error 
+    error,
+    queryKey: ['/api/conversation', conversationId, 'packages']
   });
 
   const getPackageGradient = (type: string) => {

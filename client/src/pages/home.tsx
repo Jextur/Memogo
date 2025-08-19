@@ -17,12 +17,14 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<ViewType>("conversation");
   const [selectedPackage, setSelectedPackage] = useState<TravelPackage | null>(null);
   const [showAddPOIModal, setShowAddPOIModal] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   
-  const { conversationId, conversation } = useConversation();
+  // Debug logging for home page
+  console.log("Home page state:", { conversationId });
   
   const { data: packages = [] } = useQuery<TravelPackage[]>({
     queryKey: ['/api/conversation', conversationId, 'packages'],
-    enabled: !!conversationId && conversation?.status === "completed",
+    enabled: !!conversationId,
   });
 
   const handlePackagesReady = () => {
@@ -104,8 +106,8 @@ export default function Home() {
         {currentView === "conversation" && (
           <div className="grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-160px)]">
             <ChatInterface
-              conversationId={conversationId}
               onPackagesReady={handlePackagesReady}
+              onConversationIdChange={(id) => setConversationId(id)}
             />
             <PackagePreview
               conversationId={conversationId}
