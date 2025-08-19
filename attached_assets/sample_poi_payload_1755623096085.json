@@ -1,0 +1,107 @@
+{
+  "generated_at": "2025-08-19T17:01:29.362715Z",
+  "query": "Tokyo ramen",
+  "results": [
+    {
+      "place_id": "ChIJd7zN_thwGGARdR7GzQf2I5k",
+      "name": "Ichiran Ramen Shinjuku",
+      "rating": 4.4,
+      "user_ratings_total": 12567,
+      "price_level": 2,
+      "types": [
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ],
+      "address": "1-4-1 Kabukicho, Shinjuku City, Tokyo",
+      "location": {
+        "lat": 35.694,
+        "lng": 139.702
+      },
+      "open_now": null,
+      "photo_ref": "Aap_uEA-ichiran-photo-ref"
+    },
+    {
+      "place_id": "ChIJg7aM3lRwGGARFEO9gYJ0yDM",
+      "name": "Tsuta Ramen",
+      "rating": 4.2,
+      "user_ratings_total": 4381,
+      "price_level": 2,
+      "types": [
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ],
+      "address": "Sugamo, Toshima City, Tokyo",
+      "location": {
+        "lat": 35.733,
+        "lng": 139.739
+      },
+      "open_now": null,
+      "photo_ref": "Aap_uEA-tsuta-photo-ref"
+    },
+    {
+      "place_id": "ChIJR-fakeId-abcdef-001",
+      "name": "Afuri Ramen Harajuku",
+      "rating": 4.3,
+      "user_ratings_total": 6123,
+      "price_level": 2,
+      "types": [
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ],
+      "address": "Harajuku, Shibuya City, Tokyo",
+      "location": {
+        "lat": 35.671,
+        "lng": 139.703
+      },
+      "open_now": null,
+      "photo_ref": "Aap_uEA-afuri-photo-ref"
+    },
+    {
+      "place_id": "ChIJR-fakeId-abcdef-002",
+      "name": "Rokurinsha Tokyo Station",
+      "rating": 4.5,
+      "user_ratings_total": 8456,
+      "price_level": 2,
+      "types": [
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ],
+      "address": "Tokyo Station, Chiyoda City, Tokyo",
+      "location": {
+        "lat": 35.681,
+        "lng": 139.767
+      },
+      "open_now": null,
+      "photo_ref": "Aap_uEA-rokurinsha-photo-ref"
+    },
+    {
+      "place_id": "ChIJR-fakeId-abcdef-003",
+      "name": "Nakiryu Ramen",
+      "rating": 4.3,
+      "user_ratings_total": 2890,
+      "price_level": 2,
+      "types": [
+        "restaurant",
+        "food",
+        "point_of_interest",
+        "establishment"
+      ],
+      "address": "Otsuka, Toshima City, Tokyo",
+      "location": {
+        "lat": 35.731,
+        "lng": 139.729
+      },
+      "open_now": null,
+      "photo_ref": "Aap_uEA-nakiryu-photo-ref"
+    }
+  ],
+  "notes": "以上為示範結構；實際欄位請以 Google Places API 回傳為準。"
+}
