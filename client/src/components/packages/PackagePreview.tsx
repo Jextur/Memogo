@@ -171,7 +171,8 @@ export function PackagePreview({
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              {/* Highlights */}
+              <div className="flex flex-wrap gap-2 mb-3">
                 {pkg.highlights?.slice(0, 3).map((highlight: string, idx: number) => (
                   <Badge
                     key={idx}
@@ -182,6 +183,36 @@ export function PackagePreview({
                   </Badge>
                 ))}
               </div>
+
+              {/* Day-by-day preview */}
+              {pkg.itinerary && pkg.itinerary.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-brand-border/50">
+                  <h4 className="text-sm font-medium text-brand-text mb-2">Day-by-day Preview:</h4>
+                  <div className="space-y-2">
+                    {pkg.itinerary.slice(0, 2).map((day: any, dayIdx: number) => (
+                      <div key={dayIdx} className="bg-brand-bg/20 rounded-lg p-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <h5 className="text-xs font-medium text-brand-text">Day {day.day}</h5>
+                          <span className="text-xs text-brand-mute">{day.location}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {day.activities?.slice(0, 3).map((activity: string, actIdx: number) => (
+                            <div key={actIdx} className="flex items-center text-xs text-brand-mute">
+                              <div className="w-1 h-1 bg-brand-accent rounded-full mr-2"></div>
+                              {activity}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {pkg.itinerary.length > 2 && (
+                      <div className="text-center">
+                        <span className="text-xs text-brand-mute">+{pkg.itinerary.length - 2} more days</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
