@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(255, 63%, 26%);
+  --foreground: hsl(240, 6%, 96%);
+  --card: hsl(255, 63%, 14%);
+  --card-foreground: hsl(240, 6%, 96%);
+  --popover: hsl(255, 63%, 14%);
+  --popover-foreground: hsl(240, 6%, 96%);
+  --primary: hsl(51, 100%, 50%);
+  --primary-foreground: hsl(255, 63%, 26%);
+  --secondary: hsl(255, 63%, 26%);
+  --secondary-foreground: hsl(240, 6%, 96%);
+  --muted: hsl(220, 6%, 78%);
+  --muted-foreground: hsl(255, 63%, 26%);
+  --accent: hsl(51, 100%, 50%);
+  --accent-foreground: hsl(255, 63%, 26%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(255, 42%, 26%);
+  --input: hsl(255, 63%, 26%);
+  --ring: hsl(51, 100%, 50%);
+  --chart-1: hsl(51, 100%, 50%);
+  --chart-2: hsl(159.7826, 100%, 36.0784%);
+  --chart-3: hsl(42.0290, 92.8251%, 56.2745%);
+  --chart-4: hsl(147.1429, 78.5047%, 41.9608%);
+  --chart-5: hsl(341.4894, 75.2000%, 50.9804%);
+  --font-sans: 'Inter', sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 0.75rem;
+
+  /* Brand Colors */
+  --brand-bg: hsl(255, 63%, 26%);
+  --brand-card: hsl(255, 63%, 14%);
+  --brand-border: hsl(255, 42%, 26%);
+  --brand-text: hsl(240, 6%, 96%);
+  --brand-mute: hsl(220, 6%, 78%);
+  --brand-accent: hsl(51, 100%, 50%);
+}
+
+.dark {
+  --background: hsl(255, 63%, 26%);
+  --foreground: hsl(240, 6%, 96%);
+  --card: hsl(255, 63%, 14%);
+  --card-foreground: hsl(240, 6%, 96%);
+  --popover: hsl(255, 63%, 14%);
+  --popover-foreground: hsl(240, 6%, 96%);
+  --primary: hsl(51, 100%, 50%);
+  --primary-foreground: hsl(255, 63%, 26%);
+  --secondary: hsl(255, 63%, 26%);
+  --secondary-foreground: hsl(240, 6%, 96%);
+  --muted: hsl(220, 6%, 78%);
+  --muted-foreground: hsl(255, 63%, 26%);
+  --accent: hsl(51, 100%, 50%);
+  --accent-foreground: hsl(255, 63%, 26%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(255, 42%, 26%);
+  --input: hsl(255, 63%, 26%);
+  --ring: hsl(51, 100%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background: var(--brand-bg);
+    color: var(--brand-text);
+  }
+}
+
+@layer components {
+  .brand-bg {
+    background-color: var(--brand-bg);
+  }
+  
+  .brand-card {
+    background-color: var(--brand-card);
+  }
+  
+  .brand-border {
+    border-color: var(--brand-border);
+  }
+  
+  .brand-text {
+    color: var(--brand-text);
+  }
+  
+  .brand-mute {
+    color: var(--brand-mute);
+  }
+  
+  .brand-accent {
+    color: var(--brand-accent);
+  }
+  
+  .brand-accent-bg {
+    background-color: var(--brand-accent);
+    color: var(--brand-bg);
+  }
+}
