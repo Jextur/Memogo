@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { refinePackage, exportPackage } from "@/lib/api";
-import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils } from "lucide-react";
 
 interface DayByDayViewProps {
   package: TravelPackage;
@@ -191,91 +191,106 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
               </CardHeader>
 
               <CardContent className="p-6">
-                <div className="space-y-6">
-                  {["morning", "afternoon", "evening"].map((timeSlot) => {
-                    const timeActivities = currentDay.activities?.filter(
-                      (activity) => activity.time === timeSlot
-                    ) || [];
-
-                    if (timeActivities.length === 0) return null;
-
-                    return (
-                      <div key={timeSlot} className="relative">
-                        <div className="flex items-start space-x-4">
-                          <div className="flex flex-col items-center">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              timeSlot === "morning" ? "bg-amber-500/20 text-amber-500" :
-                              timeSlot === "afternoon" ? "bg-orange-500/20 text-orange-500" :
-                              "bg-purple-500/20 text-purple-500"
-                            }`}>
-                              {getTimeIcon(timeSlot)}
+                {/* Display activities from the simple string array */}
+                {currentDay.activities && currentDay.activities.length > 0 ? (
+                  <div className="space-y-6">
+                    {/* Map activities to time slots based on their position */}
+                    {(currentDay.activities as any[]).map((activity: any, index: number) => {
+                      // Handle both string and object types
+                      const activityName = typeof activity === 'string' ? activity : activity.name;
+                      
+                      // Skip empty or placeholder activities
+                      if (!activityName || activityName === "Evening leisure time") return null;
+                      
+                      // Determine time slot based on index
+                      const timeSlot = index === 0 ? "morning" : index === 1 ? "afternoon" : "evening";
+                      const timeLabel = index === 0 ? "9:00 AM" : index === 1 ? "2:00 PM" : "6:00 PM";
+                      
+                      // Determine activity type based on keywords
+                      let activityType = "attraction";
+                      const activityLower = activityName.toLowerCase();
+                      if (activityLower.includes("restaurant") || activityLower.includes("cafe") || 
+                          activityLower.includes("table") || activityLower.includes("kitchen") ||
+                          activityLower.includes("dining")) {
+                        activityType = "restaurant";
+                      } else if (activityLower.includes("hotel") || activityLower.includes("palace")) {
+                        activityType = "accommodation";
+                      }
+                      
+                      return (
+                        <div key={`${currentDay.day}-${index}`} className="relative">
+                          <div className="flex items-start space-x-4">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                                timeSlot === "morning" ? "bg-amber-500/20 text-amber-500" :
+                                timeSlot === "afternoon" ? "bg-orange-500/20 text-orange-500" :
+                                "bg-purple-500/20 text-purple-500"
+                              }`}>
+                                {getTimeIcon(timeSlot)}
+                              </div>
+                              {index < currentDay.activities.length - 2 && (
+                                <div className="w-px h-16 bg-brand-border mt-2"></div>
+                              )}
                             </div>
-                            {timeSlot !== "evening" && (
-                              <div className="w-px h-16 bg-brand-border mt-2"></div>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <h4 className={`font-semibold mb-3 capitalize ${getTimeColor(timeSlot)}`}>
-                              {timeSlot} ({timeSlot === "morning" ? "9:00 AM" : timeSlot === "afternoon" ? "2:00 PM" : "6:00 PM"})
-                            </h4>
-                            <div className="space-y-3">
-                              {timeActivities.map((activity) => (
-                                <div
-                                  key={activity.id}
-                                  className="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group"
+                            <div className="flex-1">
+                              <h4 className={`font-semibold mb-3 capitalize ${getTimeColor(timeSlot)}`}>
+                                {timeSlot} ({timeLabel})
+                              </h4>
+                              <div className="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute top-2 right-2 w-6 h-6 p-0 bg-red-500/20 text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeActivity(currentDay.day, `activity-${index}`)}
                                 >
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="absolute top-2 right-2 w-6 h-6 p-0 bg-red-500/20 text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => removeActivity(currentDay.day, activity.id)}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </Button>
-                                  
-                                  <div className="flex items-start space-x-3">
-                                    <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                  <X className="w-3 h-3" />
+                                </Button>
+                                
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
+                                    {activityType === "restaurant" ? (
+                                      <Utensils className="w-6 h-6 text-gray-400" />
+                                    ) : activityType === "accommodation" ? (
+                                      <Star className="w-6 h-6 text-gray-400" />
+                                    ) : (
                                       <MapPin className="w-6 h-6 text-gray-400" />
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <h5 className="font-medium text-brand-text">{activityName}</h5>
                                     </div>
-                                    
-                                    <div className="flex-1">
-                                      <div className="flex items-center justify-between mb-1">
-                                        <h5 className="font-medium text-brand-text">{activity.name}</h5>
-                                        {activity.rating && (
-                                          <div className="flex items-center text-xs text-brand-mute">
-                                            <Star className="w-3 h-3 text-yellow-400 mr-1 fill-current" />
-                                            <span>{activity.rating}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <p className="text-brand-mute text-sm">{activity.address}</p>
-                                      <div className="flex items-center space-x-2 mt-2">
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-xs ${getActivityTypeColor(activity.type)}`}
-                                        >
-                                          {activity.type}
-                                        </Badge>
-                                        {activity.duration && (
-                                          <span className="text-xs text-brand-mute">{activity.duration}</span>
-                                        )}
-                                        {activity.priceLevel && (
-                                          <span className="text-xs text-brand-mute">
-                                            {"$".repeat(activity.priceLevel)}
-                                          </span>
-                                        )}
-                                      </div>
+                                    <p className="text-brand-mute text-sm">
+                                      {activityType === "restaurant" ? "Restaurant" : 
+                                       activityType === "accommodation" ? "Hotel" : "Attraction"}
+                                    </p>
+                                    <div className="flex items-center space-x-2 mt-2">
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-xs ${getActivityTypeColor(activityType)}`}
+                                      >
+                                        {activityType}
+                                      </Badge>
+                                      <span className="text-xs text-brand-mute">
+                                        {timeSlot === "morning" ? "~2 hours" : 
+                                         timeSlot === "afternoon" ? "~3 hours" : "~2 hours"}
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-brand-mute">No activities planned for this day yet.</p>
+                  </div>
+                )}
 
                 {/* Day Summary */}
                 <div className="mt-6 pt-6 border-t border-brand-border">
