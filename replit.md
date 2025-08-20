@@ -56,6 +56,12 @@ A conversational AI travel planning platform that creates personalized travel pa
   - Implemented actionable navigation buttons with format: https://www.google.com/maps/place/?q=place_id:<PLACE_ID>
   - Added Maps links in both itinerary view and POI search modal for preview
   - Fallback to search query links for POIs without Place IDs
+  - **Replaced generic theme question with localized city-specific tags:**
+    - Dynamic multi-select tag interface based on selected city
+    - 40+ major cities with curated popular attractions (Tokyo → Disneyland, Tokyo Tower, etc.)
+    - Support for custom user preferences alongside predefined tags
+    - Tags appear naturally in conversation as if typed by user
+    - Fallback to generic interests for non-curated cities
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

@@ -327,6 +327,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get city-specific tags/attractions
+  app.get('/api/cities/tags/:cityName/:countryCode', async (req, res) => {
+    const { cityName, countryCode } = req.params;
+    const { getCityTags, getDefaultTags } = await import('./data/cityTags');
+    
+    const tags = getCityTags(cityName, countryCode);
+    
+    // If no city-specific tags found, return default ones
+    if (tags.length === 0) {
+      res.json({ tags: getDefaultTags(), isDefault: true });
+    } else {
+      res.json({ tags, isDefault: false });
+    }
+  });
+
   // Export endpoint
   app.get("/api/packages/:id/export", async (req, res) => {
     try {

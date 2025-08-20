@@ -80,3 +80,9 @@ export async function getPlaceDetails(placeId: string): Promise<{ result: POI }>
 export function getPhotoUrl(photoRef: string, maxWidth: number = 400): string {
   return `/api/places/photo?ref=${photoRef}&maxwidth=${maxWidth}`;
 }
+
+// Get city-specific tags/attractions
+export async function getCityTags(cityName: string, countryCode: string): Promise<{ tags: string[], isDefault: boolean }> {
+  const response = await apiRequest("GET", `/api/cities/tags/${encodeURIComponent(cityName)}/${encodeURIComponent(countryCode)}`);
+  return await response.json();
+}

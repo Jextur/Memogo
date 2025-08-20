@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useConversation } from "@/hooks/useConversation";
+import { TagSelector } from "@/components/chat/TagSelector";
 import { ChatMessage } from "@/types/travel";
 import { Plane, Bot, User, Send } from "lucide-react";
 
@@ -15,6 +16,8 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ conversationId, onPackagesReady, onConversationIdChange }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<{ name: string; countryCode: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const packageGenerationTriggeredRef = useRef<string | null>(null);
@@ -76,6 +79,69 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     }
   }, [nextStep, isGeneratingPackages, currentConversationId]);
 
+  // Detect when to show tag selector (after city is selected, before themes)
+  useEffect(() => {
+    if (!conversation) return;
+    
+    const lastMessage = conversation.messages[conversation.messages.length - 1];
+    const lastUserMessage = [...conversation.messages].reverse().find(m => m.role === "user");
+    
+    // Check if we're at the theme selection step
+    if (lastMessage?.role === "assistant" && 
+        lastMessage.content?.toLowerCase().includes("what are you most interested in") &&
+        lastMessage.options?.some(opt => opt.includes("Must-see highlights"))) {
+      
+      // Extract city info from conversation
+      const cityMessages = conversation.messages.filter(m => m.role === "user");
+      let cityName = "";
+      let countryCode = "";
+      
+      // Look for city name in user messages
+      for (const msg of cityMessages) {
+        // Common city patterns
+        const cityPatterns = [
+          /^(tokyo|kyoto|osaka|paris|london|new york|barcelona|rome|bangkok|sydney|dubai|singapore)/i,
+          /going to ([a-z\s]+)/i,
+          /visit ([a-z\s]+)/i,
+        ];
+        
+        for (const pattern of cityPatterns) {
+          const match = msg.content.match(pattern);
+          if (match) {
+            cityName = match[1] || match[0];
+            break;
+          }
+        }
+        if (cityName) break;
+      }
+      
+      // Map city to country code (simplified - you might want to enhance this)
+      const cityCountryMap: Record<string, string> = {
+        'tokyo': 'JP', 'kyoto': 'JP', 'osaka': 'JP', 'okinawa': 'JP',
+        'new york': 'US', 'los angeles': 'US', 'san francisco': 'US', 'miami': 'US',
+        'paris': 'FR', 'nice': 'FR',
+        'london': 'GB', 'edinburgh': 'GB',
+        'barcelona': 'ES', 'madrid': 'ES',
+        'rome': 'IT', 'venice': 'IT', 'florence': 'IT',
+        'bangkok': 'TH', 'phuket': 'TH', 'chiang mai': 'TH',
+        'sydney': 'AU', 'melbourne': 'AU',
+        'singapore': 'SG',
+        'dubai': 'AE',
+      };
+      
+      const normalizedCity = cityName.toLowerCase().trim();
+      countryCode = cityCountryMap[normalizedCity] || 'US';
+      
+      if (cityName) {
+        setSelectedCity({ 
+          name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), 
+          countryCode 
+        });
+        setShowTagSelector(true);
+      }
+    }
+  }, [conversation]);
+
   // Notify parent when packages are ready
   useEffect(() => {
     if (conversation?.status === "completed" && onPackagesReady) {
@@ -99,6 +165,20 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     setTimeout(() => {
       inputRef.current?.focus();
     }, 100);
+  };
+
+  const handleTagsSelected = (tags: string[]) => {
+    // Send selected tags as a natural message
+    const tagsMessage = `I'm interested in: ${tags.join(', ')}`;
+    sendUserMessage(tagsMessage);
+    setShowTagSelector(false);
+    setSelectedCity(null);
+  };
+
+  const handleSkipTags = () => {
+    sendUserMessage("Mix of everything");
+    setShowTagSelector(false);
+    setSelectedCity(null);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -170,7 +250,8 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
                 : "bg-brand-bg/50 rounded-tl-sm"
             }`}>
               <p className="text-sm text-brand-text">{msg.content}</p>
-              {msg.options && msg.options.length > 0 && (
+              {/* Hide generic theme options if we're showing tag selector */}
+              {msg.options && msg.options.length > 0 && !showTagSelector && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {msg.options.map((option, index) => (
                     <Button
@@ -189,6 +270,18 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
             </div>
           </div>
         ))}
+
+        {/* Show TagSelector when appropriate */}
+        {showTagSelector && selectedCity && !isSendingMessage && (
+          <div className="mt-4">
+            <TagSelector
+              cityName={selectedCity.name}
+              countryCode={selectedCity.countryCode}
+              onTagsSelected={handleTagsSelected}
+              onSkip={handleSkipTags}
+            />
+          </div>
+        )}
 
         {(isSendingMessage || isGeneratingPackages) && (
           <div className="flex items-start space-x-3">
