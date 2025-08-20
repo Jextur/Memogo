@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { ChatMessage } from "@shared/schema";
 import { searchPlaces } from "./googlePlaces";
+import { normalizeUserInput, fuzzyMatchDestination, suggestCorrection } from "../utils/textProcessing";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({
@@ -35,66 +36,148 @@ export interface GeneratedPackage {
   itinerary: any[];
 }
 
-// Simple fallback conversation logic for when OpenAI is unavailable
+// Enhanced fallback conversation logic with fuzzy matching and better input handling
 function fallbackConversation(context: ConversationContext): {
   response: string;
   nextStep: string;
   options?: string[];
   extractedInfo?: Partial<ConversationContext>;
 } {
-  const userMessage = context.messages[context.messages.length - 1]?.content.toLowerCase() || "";
+  const userMessage = context.messages[context.messages.length - 1]?.content || "";
   
-  if (!context.destination && (userMessage.includes("paris") || userMessage.includes("france"))) {
-    return {
-      response: "Great choice! Paris is amazing. How many days are you planning to stay?",
-      nextStep: "question",
-      extractedInfo: { destination: "Paris, France" }
-    };
-  } else if (!context.destination && (userMessage.includes("tokyo") || userMessage.includes("japan"))) {
-    return {
-      response: "Tokyo is incredible! How many days would you like to explore Japan?",
-      nextStep: "question",
-      extractedInfo: { destination: "Tokyo, Japan" }
-    };
-  } else if (!context.destination && (userMessage.includes("london") || userMessage.includes("england") || userMessage.includes("uk"))) {
-    return {
-      response: "London is a fantastic choice! How many days are you planning to visit?",
-      nextStep: "question", 
-      extractedInfo: { destination: "London, England" }
-    };
-  } else if (!context.days && userMessage.match(/\d+\s*(day|night)/)) {
-    const days = parseInt(userMessage.match(/(\d+)/)?.[1] || "3");
-    return {
-      response: `Perfect! ${days} days in ${context.destination || "your destination"} sounds wonderful. How many people will be traveling?`,
-      nextStep: "question", 
-      extractedInfo: { days }
-    };
-  } else if (!context.people && userMessage.match(/\d+\s*(people|person|traveler)/)) {
-    const people = parseInt(userMessage.match(/(\d+)/)?.[1] || "2");
-    return {
-      response: `Excellent! For ${people} ${people === 1 ? 'person' : 'people'}. What type of experience are you looking for?`,
-      nextStep: "question",
-      options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
-      extractedInfo: { people }
-    };
-  } else if (!context.theme) {
-    let theme = "classic";
-    if (userMessage.includes("food") || userMessage.includes("dining") || userMessage.includes("culinary")) {
-      theme = "foodie";
-    } else if (userMessage.includes("budget") || userMessage.includes("cheap") || userMessage.includes("affordable")) {
-      theme = "budget";
+  // Normalize the input (convert word numbers to digits, etc.)
+  const { normalized, detectedDestination, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
+  
+  // Step 1: Get destination
+  if (!context.destination) {
+    // Try fuzzy matching for destination
+    const destination = detectedDestination || fuzzyMatchDestination(userMessage);
+    
+    if (destination) {
+      return {
+        response: `Great choice! ${destination} is amazing. How many days are you planning to stay?`,
+        nextStep: "question",
+        extractedInfo: { destination }
+      };
+    } else {
+      // Suggest correction if input seems like a typo
+      const correction = suggestCorrection(userMessage);
+      if (correction) {
+        return {
+          response: `I didn't quite catch that. ${correction} Or you can tell me any destination you'd like to visit!`,
+          nextStep: "question",
+          options: ["London", "Paris", "Tokyo", "New York", "Rome"]
+        };
+      }
+      
+      // Default prompt for destination
+      return {
+        response: "I'd love to help you plan a trip! Where would you like to go? You can choose from popular destinations or tell me any place you have in mind.",
+        nextStep: "question",
+        options: ["London", "Paris", "Tokyo", "New York", "Rome"]
+      };
     }
+  }
+  
+  // Step 2: Get number of days
+  if (!context.days) {
+    if (detectedDays && detectedDays > 0 && detectedDays <= 30) {
+      return {
+        response: `Perfect! ${detectedDays} days in ${context.destination} sounds wonderful. How many people will be traveling?`,
+        nextStep: "question",
+        extractedInfo: { days: detectedDays }
+      };
+    } else if (detectedDays && detectedDays > 30) {
+      return {
+        response: "That's quite a long trip! For now, I can help plan trips up to 30 days. How many days would you like to stay (1-30)?",
+        nextStep: "question"
+      };
+    } else {
+      return {
+        response: `How many days are you planning to spend in ${context.destination}? You can tell me in any format (e.g., "5 days", "five days", "a week").`,
+        nextStep: "question",
+        options: ["3 days", "5 days", "7 days", "10 days"]
+      };
+    }
+  }
+  
+  // Step 3: Get number of people
+  if (!context.people) {
+    if (detectedPeople && detectedPeople > 0 && detectedPeople <= 20) {
+      return {
+        response: `Excellent! For ${detectedPeople} ${detectedPeople === 1 ? 'person' : 'people'}. What type of experience are you looking for?`,
+        nextStep: "question",
+        options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
+        extractedInfo: { people: detectedPeople }
+      };
+    } else if (detectedPeople && detectedPeople > 20) {
+      return {
+        response: "That's a large group! I can help plan for groups up to 20 people. How many travelers will there be?",
+        nextStep: "question"
+      };
+    } else {
+      // Check for informal people counts
+      if (normalized.includes("solo") || normalized.includes("alone") || normalized.includes("myself")) {
+        return {
+          response: "Perfect! A solo adventure. What type of experience are you looking for?",
+          nextStep: "question",
+          options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
+          extractedInfo: { people: 1 }
+        };
+      } else if (normalized.includes("couple") || normalized.includes("two of us")) {
+        return {
+          response: "Excellent! For 2 people. What type of experience are you looking for?",
+          nextStep: "question",
+          options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
+          extractedInfo: { people: 2 }
+        };
+      } else if (normalized.includes("family")) {
+        return {
+          response: "A family trip sounds wonderful! How many people total will be traveling?",
+          nextStep: "question",
+          options: ["2 people", "3 people", "4 people", "5+ people"]
+        };
+      }
+      
+      return {
+        response: `How many people will be traveling to ${context.destination}? You can say things like "just me", "2 people", "a family of four", etc.`,
+        nextStep: "question",
+        options: ["Just me", "2 people", "3-4 people", "5+ people"]
+      };
+    }
+  }
+  
+  // Step 4: Get theme/preference
+  if (!context.theme) {
+    let theme = "classic";
+    const lowerMessage = normalized.toLowerCase();
+    
+    if (lowerMessage.includes("food") || lowerMessage.includes("dining") || 
+        lowerMessage.includes("culinary") || lowerMessage.includes("restaurant") ||
+        lowerMessage.includes("foodie")) {
+      theme = "foodie";
+    } else if (lowerMessage.includes("budget") || lowerMessage.includes("cheap") || 
+               lowerMessage.includes("affordable") || lowerMessage.includes("economical") ||
+               lowerMessage.includes("save money")) {
+      theme = "budget";
+    } else if (lowerMessage.includes("classic") || lowerMessage.includes("sightseeing") ||
+               lowerMessage.includes("tourist") || lowerMessage.includes("landmark") ||
+               lowerMessage.includes("must-see")) {
+      theme = "classic";
+    }
+    
     return {
-      response: "Perfect! I have all the information I need. Let me create personalized travel packages for you using real places and attractions. This will take a moment...",
+      response: `Perfect! I have all the information I need. Let me create personalized travel packages for your ${context.days}-day trip to ${context.destination} for ${context.people} ${context.people === 1 ? 'person' : 'people'}. This will take a moment...`,
       nextStep: "generate",
       extractedInfo: { theme }
     };
-  } else {
-    return {
-      response: "I'd love to help you plan a trip! Where would you like to go? (Try Paris, Tokyo, or London)",
-      nextStep: "question"
-    };
   }
+  
+  // Default response if we have all info but somehow reach here
+  return {
+    response: "I have all your travel details! Let me create your personalized packages now...",
+    nextStep: "generate"
+  };
 }
 
 export async function continueConversation(context: ConversationContext): Promise<{

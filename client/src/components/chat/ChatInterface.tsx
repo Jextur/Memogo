@@ -16,6 +16,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ conversationId, onPackagesReady, onConversationIdChange }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const packageGenerationTriggeredRef = useRef<string | null>(null);
   
   const {
@@ -35,6 +36,13 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversation?.messages]);
+
+  // Auto-focus input on mount and when conversation starts
+  useEffect(() => {
+    if (!isSendingMessage && !isGeneratingPackages) {
+      inputRef.current?.focus();
+    }
+  }, [currentConversationId, isSendingMessage, isGeneratingPackages]);
 
   // Start conversation if none exists
   useEffect(() => {
@@ -79,10 +87,18 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     if (!message.trim() || isSendingMessage) return;
     sendUserMessage(message);
     setMessage("");
+    // Auto-focus the input after sending a message
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const handleOptionSelect = (option: string) => {
     sendUserMessage(option);
+    // Auto-focus the input after selecting an option
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -196,6 +212,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       <div className="p-4 border-t border-brand-border">
         <div className="flex space-x-2">
           <Input
+            ref={inputRef}
             type="text"
             placeholder="Type your message..."
             value={message}

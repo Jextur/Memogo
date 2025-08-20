@@ -29,6 +29,27 @@ export function useConversation(conversationId?: string) {
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['/api/conversation', variables.conversationId], data.conversation);
     },
+    onError: (error, variables) => {
+      console.error("Error sending message:", error);
+      
+      // Create a helpful error message
+      const currentConv = queryClient.getQueryData<Conversation>(['/api/conversation', variables.conversationId]);
+      const errorMessage: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: "I had a little trouble understanding that. Could you try rephrasing? Don't worry about typos - I can handle 'lodon' for London or 'five days' instead of '5 days'. What would you like to tell me?",
+        timestamp: new Date(),
+        options: (!currentConv || currentConv.messages.length === 0) ? ["London", "Paris", "Tokyo", "New York"] : undefined
+      };
+      
+      // Add error message to conversation
+      if (currentConv) {
+        queryClient.setQueryData(['/api/conversation', variables.conversationId], {
+          ...currentConv,
+          messages: [...currentConv.messages, errorMessage]
+        });
+      }
+    },
   });
 
   // Generate packages mutation
