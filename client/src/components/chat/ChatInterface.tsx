@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useConversation } from "@/hooks/useConversation";
-import { TagSelector } from "@/components/chat/TagSelector";
+import { EnhancedTagSelector } from "@/components/chat/EnhancedTagSelector";
 import { ChatMessage } from "@/types/travel";
 import { Plane, Bot, User, Send } from "lucide-react";
 
@@ -278,7 +278,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         {/* Show TagSelector when appropriate */}
         {showTagSelector && selectedCity && !isSendingMessage && (
           <div className="mt-4">
-            <TagSelector
+            <EnhancedTagSelector
               cityName={selectedCity.name}
               countryCode={selectedCity.countryCode}
               onTagsSelected={handleTagsSelected}

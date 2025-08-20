@@ -95,6 +95,74 @@ export const pois = pgTable('pois', {
   placeIdIdx: index('idx_place_id').on(table.placeId)
 }));
 
+// City Tags table - localized attractions/experiences per city
+export const cityTags = pgTable('city_tags', {
+  id: serial('id').primaryKey(),
+  cityId: integer('city_id').references(() => cities.id).notNull(),
+  label: varchar('label', { length: 255 }).notNull(), // Display name
+  normalizedLabel: varchar('normalized_label', { length: 255 }).notNull(), // Lowercase, no spaces
+  source: varchar('source', { length: 50 }).notNull(), // 'curated', 'places_enrich', 'user_add'
+  score: decimal('score', { precision: 5, scale: 2 }).default('1.00'), // Popularity/relevance score
+  placeIds: jsonb('place_ids').$type<string[]>(), // Sample Google Place IDs
+  metadata: jsonb('metadata').$type<{
+    category?: string; // 'attraction', 'district', 'experience', 'food'
+    description?: string;
+    photoUrl?: string;
+    avgRating?: number;
+    reviewCount?: number;
+  }>(),
+  usageCount: integer('usage_count').default(0), // Track how often selected
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+}, (table) => ({
+  cityIdIdx: index('idx_tag_city_id').on(table.cityId),
+  normalizedLabelIdx: index('idx_normalized_label').on(table.normalizedLabel),
+  sourceIdx: index('idx_tag_source').on(table.source),
+  scoreIdx: index('idx_tag_score').on(table.score),
+  uniqueCityTag: uniqueIndex('idx_unique_city_tag').on(table.cityId, table.normalizedLabel)
+}));
+
+// Tag Aliases table - multi-lingual and variations
+export const tagAliases = pgTable('tag_aliases', {
+  id: serial('id').primaryKey(),
+  tagId: integer('tag_id').references(() => cityTags.id).notNull(),
+  alias: varchar('alias', { length: 255 }).notNull(),
+  normalizedAlias: varchar('normalized_alias', { length: 255 }).notNull(),
+  language: varchar('language', { length: 10 }), // ISO language code (e.g., 'ja', 'en')
+  aliasType: varchar('alias_type', { length: 50 }), // 'synonym', 'abbreviation', 'translation', 'typo'
+  confidence: decimal('confidence', { precision: 3, scale: 2 }).default('1.00'), // Confidence score
+  createdAt: timestamp('created_at').defaultNow().notNull()
+}, (table) => ({
+  tagIdIdx: index('idx_alias_tag_id').on(table.tagId),
+  normalizedAliasIdx: index('idx_normalized_alias').on(table.normalizedAlias),
+  uniqueAlias: uniqueIndex('idx_unique_alias').on(table.tagId, table.normalizedAlias)
+}));
+
+// Tag Embeddings table - for semantic similarity matching
+export const tagEmbeddings = pgTable('tag_embeddings', {
+  id: serial('id').primaryKey(),
+  tagId: integer('tag_id').references(() => cityTags.id).notNull().unique(),
+  embedding: jsonb('embedding').$type<number[]>().notNull(), // Vector embedding
+  model: varchar('model', { length: 100 }).notNull(), // Model used for embedding
+  createdAt: timestamp('created_at').defaultNow().notNull()
+}, (table) => ({
+  tagIdIdx: index('idx_embedding_tag_id').on(table.tagId)
+}));
+
+// User Tag Selections - track what users select
+export const userTagSelections = pgTable('user_tag_selections', {
+  id: serial('id').primaryKey(),
+  conversationId: varchar('conversation_id', { length: 255 }).notNull(),
+  tagId: integer('tag_id').references(() => cityTags.id),
+  customText: varchar('custom_text', { length: 255 }), // For user-entered custom tags
+  isCustom: boolean('is_custom').default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull()
+}, (table) => ({
+  conversationIdIdx: index('idx_selection_conversation_id').on(table.conversationId),
+  tagIdIdx: index('idx_selection_tag_id').on(table.tagId)
+}));
+
 // Conversations table (expanded)
 export const conversations = pgTable('conversations', {
   id: serial('id').primaryKey(),
@@ -104,6 +172,7 @@ export const conversations = pgTable('conversations', {
   days: integer('days'),
   people: integer('people'),
   theme: varchar('theme', { length: 100 }),
+  selectedTags: jsonb('selected_tags').$type<string[]>(), // Store selected tag labels
   status: varchar('status', { length: 50 }).default('active'),
   messages: jsonb('messages').$type<ChatMessage[]>().notNull(),
   refinementCount: integer('refinement_count').default(0),
@@ -114,7 +183,8 @@ export const conversations = pgTable('conversations', {
 
 // Relations
 export const citiesRelations = relations(cities, ({ many }) => ({
-  travelPackages: many(travelPackages)
+  travelPackages: many(travelPackages),
+  cityTags: many(cityTags)
 }));
 
 export const travelPackagesRelations = relations(travelPackages, ({ one }) => ({
@@ -123,6 +193,61 @@ export const travelPackagesRelations = relations(travelPackages, ({ one }) => ({
     references: [cities.id]
   })
 }));
+
+export const cityTagsRelations = relations(cityTags, ({ one, many }) => ({
+  city: one(cities, {
+    fields: [cityTags.cityId],
+    references: [cities.id]
+  }),
+  aliases: many(tagAliases),
+  embedding: one(tagEmbeddings, {
+    fields: [cityTags.id],
+    references: [tagEmbeddings.tagId]
+  }),
+  selections: many(userTagSelections)
+}));
+
+export const tagAliasesRelations = relations(tagAliases, ({ one }) => ({
+  tag: one(cityTags, {
+    fields: [tagAliases.tagId],
+    references: [cityTags.id]
+  })
+}));
+
+export const tagEmbeddingsRelations = relations(tagEmbeddings, ({ one }) => ({
+  tag: one(cityTags, {
+    fields: [tagEmbeddings.tagId],
+    references: [cityTags.id]
+  })
+}));
+
+export const userTagSelectionsRelations = relations(userTagSelections, ({ one }) => ({
+  tag: one(cityTags, {
+    fields: [userTagSelections.tagId],
+    references: [cityTags.id]
+  })
+}));
+
+// Insert schemas and types for new tables
+export const insertCityTagSchema = createInsertSchema(cityTags).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCityTag = z.infer<typeof insertCityTagSchema>;
+export type CityTag = typeof cityTags.$inferSelect;
+
+export const insertTagAliasSchema = createInsertSchema(tagAliases).omit({ id: true, createdAt: true });
+export type InsertTagAlias = z.infer<typeof insertTagAliasSchema>;
+export type TagAlias = typeof tagAliases.$inferSelect;
+
+export const insertTagEmbeddingSchema = createInsertSchema(tagEmbeddings).omit({ id: true, createdAt: true });
+export type InsertTagEmbedding = z.infer<typeof insertTagEmbeddingSchema>;
+export type TagEmbedding = typeof tagEmbeddings.$inferSelect;
+
+export const insertUserTagSelectionSchema = createInsertSchema(userTagSelections).omit({ id: true, createdAt: true });
+export type InsertUserTagSelection = z.infer<typeof insertUserTagSelectionSchema>;
+export type UserTagSelection = typeof userTagSelections.$inferSelect;
+
+// Export City types
+export type City = typeof cities.$inferSelect;
+export type InsertCity = typeof cities.$inferInsert;
 
 // Chat message type
 export interface ChatMessage {
@@ -151,8 +276,6 @@ export const insertCitySchema = createInsertSchema(cities).omit({
   createdAt: true,
   updatedAt: true
 });
-export type InsertCity = z.infer<typeof insertCitySchema>;
-export type City = typeof cities.$inferSelect;
 
 export const insertPlacesCacheSchema = createInsertSchema(placesCache).omit({
   id: true,

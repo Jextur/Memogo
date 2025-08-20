@@ -1,4 +1,12 @@
-import { type User, type InsertUser, type Conversation, type InsertConversation, type TravelPackage, type InsertTravelPackage, type POI, type InsertPOI } from "@shared/schema";
+import { 
+  type User, type InsertUser, 
+  type Conversation, type InsertConversation, 
+  type TravelPackage, type InsertTravelPackage, 
+  type POI, type InsertPOI,
+  type CityTag, type InsertCityTag,
+  type TagAlias, type InsertTagAlias,
+  type City
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -24,6 +32,21 @@ export interface IStorage {
   getPOIByPlaceId(placeId: string): Promise<POI | undefined>;
   createPOI(poi: InsertPOI): Promise<POI>;
   updatePOI(id: string, updates: Partial<POI>): Promise<POI | undefined>;
+
+  // City operations
+  getCityByName(cityName: string, countryCode: string): Promise<City | undefined>;
+  
+  // City tag operations
+  getCityTags(cityId: number): Promise<CityTag[]>;
+  getCityTag(id: number): Promise<CityTag | undefined>;
+  createCityTag(tag: InsertCityTag): Promise<CityTag>;
+  updateCityTag(id: number, updates: Partial<CityTag>): Promise<CityTag | undefined>;
+  incrementTagUsage(tagId: number): Promise<void>;
+  
+  // Tag alias operations
+  getTagAliasesByCityId(cityId: number): Promise<TagAlias[]>;
+  getTagAliases(tagId: number): Promise<TagAlias[]>;
+  createTagAlias(alias: InsertTagAlias): Promise<TagAlias>;
 }
 
 export class MemStorage implements IStorage {
@@ -31,12 +54,163 @@ export class MemStorage implements IStorage {
   private conversations: Map<string, Conversation>;
   private travelPackages: Map<string, TravelPackage>;
   private pois: Map<string, POI>;
+  private cities: Map<number, City>;
+  private cityTags: Map<number, CityTag>;
+  private tagAliases: Map<number, TagAlias>;
+  private cityTagCounter = 1000; // Start from 1000 for in-memory IDs
 
   constructor() {
     this.users = new Map();
     this.conversations = new Map();
     this.travelPackages = new Map();
     this.pois = new Map();
+    this.cities = new Map();
+    this.cityTags = new Map();
+    this.tagAliases = new Map();
+    
+    // Initialize with some default cities for testing
+    this.initializeDefaultCities();
+  }
+  
+  private initializeDefaultCities() {
+    // Add some default cities
+    const cities = [
+      {
+        id: 1,
+        googlePlaceId: 'ChIJ51cu8IcbXWARiRtXIothAS4',
+        cityName: 'Tokyo',
+        countryCode: 'JP',
+        countryName: 'Japan',
+        adminLevel1: 'Tokyo',
+        latitude: '35.6762',
+        longitude: '139.6503',
+        isCurated: true,
+        popularity: 100,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 2,
+        googlePlaceId: 'ChIJ8S7pTtpwhlQRZmpW5qLvGEU',
+        cityName: 'Kyoto',
+        countryCode: 'JP',
+        countryName: 'Japan',
+        adminLevel1: 'Kyoto',
+        latitude: '35.0116',
+        longitude: '135.7681',
+        isCurated: true,
+        popularity: 90,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 3,
+        googlePlaceId: 'ChIJoZ5KYnGJAGARKtGkqbh5oJg',
+        cityName: 'Osaka',
+        countryCode: 'JP',
+        countryName: 'Japan',
+        adminLevel1: 'Osaka',
+        latitude: '34.6937',
+        longitude: '135.5023',
+        isCurated: true,
+        popularity: 85,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+    
+    cities.forEach(city => {
+      this.cities.set(city.id, city as City);
+    });
+    
+    // Initialize default tags for Tokyo
+    this.initializeDefaultTags();
+  }
+  
+  private initializeDefaultTags() {
+    const cityTagsData = [
+      // Tokyo tags
+      {
+        cityId: 1,
+        tags: [
+          { label: 'Tokyo Disneyland', aliases: ['TDL', '東京ディズニーランド', 'disney'], category: 'attraction' },
+          { label: 'Tokyo Tower', aliases: ['東京タワー'], category: 'attraction' },
+          { label: 'Akihabara', aliases: ['Akiba', '秋葉原', 'akihabra'], category: 'district' },
+          { label: 'Tsukiji Market', aliases: ['築地市場', 'Tsukiji', '築地'], category: 'experience' },
+          { label: 'Shibuya Crossing', aliases: ['渋谷スクランブル交差点', 'shibuya'], category: 'attraction' },
+          { label: 'Senso-ji Temple', aliases: ['浅草寺', 'Sensoji', 'sensouji'], category: 'attraction' },
+          { label: 'TeamLab Planets', aliases: ['チームラボプラネッツ', 'Team Lab', 'teamlab'], category: 'experience' },
+          { label: 'Shinjuku', aliases: ['新宿'], category: 'district' },
+          { label: 'Harajuku', aliases: ['原宿'], category: 'district' },
+          { label: 'Roppongi', aliases: ['六本木'], category: 'district' }
+        ]
+      },
+      // Kyoto tags
+      {
+        cityId: 2,
+        tags: [
+          { label: 'Fushimi Inari', aliases: ['伏見稲荷', 'fushimi-inari'], category: 'attraction' },
+          { label: 'Golden Pavilion', aliases: ['金閣寺', 'Kinkaku-ji'], category: 'attraction' },
+          { label: 'Bamboo Forest', aliases: ['竹林', 'Arashiyama'], category: 'experience' },
+          { label: 'Gion District', aliases: ['祇園'], category: 'district' },
+          { label: 'Kiyomizu Temple', aliases: ['清水寺'], category: 'attraction' }
+        ]
+      },
+      // Osaka tags
+      {
+        cityId: 3,
+        tags: [
+          { label: 'Osaka Castle', aliases: ['大阪城'], category: 'attraction' },
+          { label: 'Dotonbori', aliases: ['道頓堀'], category: 'district' },
+          { label: 'Universal Studios Japan', aliases: ['USJ', 'ユニバーサル'], category: 'attraction' },
+          { label: 'Shinsekai', aliases: ['新世界'], category: 'district' },
+          { label: 'Namba', aliases: ['難波'], category: 'district' }
+        ]
+      }
+    ];
+    
+    let tagIdCounter = 1;
+    cityTagsData.forEach(cityData => {
+      cityData.tags.forEach((tagData) => {
+        const tagId = tagIdCounter++;
+        const tag: CityTag = {
+          id: tagId,
+          cityId: cityData.cityId,
+          label: tagData.label,
+          normalizedLabel: tagData.label.toLowerCase().replace(/[\s-_]+/g, ''),
+          source: 'curated',
+          score: '1.00',
+          placeIds: [],
+          metadata: { category: tagData.category },
+          usageCount: 0,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        this.cityTags.set(tagId, tag);
+        
+        // Add aliases
+        tagData.aliases.forEach((aliasText, aliasIndex) => {
+          const alias: TagAlias = {
+            id: tagId * 100 + aliasIndex,
+            tagId,
+            alias: aliasText,
+            normalizedAlias: aliasText.toLowerCase().replace(/[\s-_]+/g, ''),
+            language: aliasText.match(/[\u3040-\u309f\u30a0-\u30ff\u4e00-\u9faf]/) ? 'ja' : 'en',
+            aliasType: aliasText.length <= 3 ? 'abbreviation' : 'translation',
+            confidence: '1.00',
+            createdAt: new Date()
+          };
+          this.tagAliases.set(alias.id, alias);
+        });
+      });
+    });
   }
 
   // User operations
@@ -176,6 +350,82 @@ export class MemStorage implements IStorage {
     const updated = { ...poi, ...updates };
     this.pois.set(id, updated);
     return updated;
+  }
+
+  // City operations
+  async getCityByName(cityName: string, countryCode: string): Promise<City | undefined> {
+    return Array.from(this.cities.values()).find(
+      city => city.cityName.toLowerCase() === cityName.toLowerCase() && 
+              city.countryCode === countryCode
+    );
+  }
+
+  // City tag operations
+  async getCityTags(cityId: number): Promise<CityTag[]> {
+    return Array.from(this.cityTags.values())
+      .filter(tag => tag.cityId === cityId && tag.isActive)
+      .sort((a, b) => Number(b.score) - Number(a.score));
+  }
+
+  async getCityTag(id: number): Promise<CityTag | undefined> {
+    return this.cityTags.get(id);
+  }
+
+  async createCityTag(tag: InsertCityTag): Promise<CityTag> {
+    const id = ++this.cityTagCounter;
+    const newTag: CityTag = {
+      id,
+      ...tag,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    this.cityTags.set(id, newTag);
+    return newTag;
+  }
+
+  async updateCityTag(id: number, updates: Partial<CityTag>): Promise<CityTag | undefined> {
+    const tag = this.cityTags.get(id);
+    if (!tag) return undefined;
+    
+    const updated = { ...tag, ...updates, updatedAt: new Date() };
+    this.cityTags.set(id, updated);
+    return updated;
+  }
+
+  async incrementTagUsage(tagId: number): Promise<void> {
+    const tag = this.cityTags.get(tagId);
+    if (tag) {
+      await this.updateCityTag(tagId, { 
+        usageCount: tag.usageCount + 1,
+        score: (Number(tag.score) + 0.01).toFixed(2) // Slightly increase score with usage
+      });
+    }
+  }
+
+  // Tag alias operations
+  async getTagAliasesByCityId(cityId: number): Promise<TagAlias[]> {
+    const cityTagIds = Array.from(this.cityTags.values())
+      .filter(tag => tag.cityId === cityId)
+      .map(tag => tag.id);
+    
+    return Array.from(this.tagAliases.values())
+      .filter(alias => cityTagIds.includes(alias.tagId));
+  }
+
+  async getTagAliases(tagId: number): Promise<TagAlias[]> {
+    return Array.from(this.tagAliases.values())
+      .filter(alias => alias.tagId === tagId);
+  }
+
+  async createTagAlias(alias: InsertTagAlias): Promise<TagAlias> {
+    const id = Math.max(...Array.from(this.tagAliases.keys()), 0) + 1;
+    const newAlias: TagAlias = {
+      id,
+      ...alias,
+      createdAt: new Date()
+    };
+    this.tagAliases.set(id, newAlias);
+    return newAlias;
   }
 }
 

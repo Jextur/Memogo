@@ -62,6 +62,17 @@ A conversational AI travel planning platform that creates personalized travel pa
     - Support for custom user preferences alongside predefined tags
     - Tags appear naturally in conversation as if typed by user
     - Fallback to generic interests for non-curated cities
+- 2025-01-25: **Enhanced Tag System with Advanced Normalization:**
+  - **Database Schema**: Added cityTags, tagAliases, tagEmbeddings, userTagSelections tables
+  - **Multi-lingual Support**: Japanese/English aliases (e.g., "築地" → Tsukiji Market, "TDL" → Tokyo Disneyland)
+  - **Fuzzy Matching**: Handles typos with Levenshtein distance (≥75% similarity threshold)
+  - **Tag Normalization Service**: Maps free-text inputs to existing tags or creates validated candidates
+  - **Enhanced Storage**: 10+ tags for Tokyo, 5+ for Kyoto/Osaka with aliases
+  - **Smart Categorization**: Tags grouped by category (attraction, district, experience, food)
+  - **Usage Tracking**: Increments scores based on user selections for better recommendations
+  - **Real-time Search**: As-you-type tag suggestions with confidence scores
+  - **Google Places Validation**: Future-ready for validating unknown tags via Places API
+  - **EnhancedTagSelector Component**: Visual categories, multi-select, custom input support
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript
