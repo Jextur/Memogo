@@ -36,7 +36,7 @@ export interface GeneratedPackage {
   itinerary: any[];
 }
 
-// Enhanced fallback conversation logic with fuzzy matching and better input handling
+// Enhanced fallback conversation logic with city-aware fuzzy matching
 function fallbackConversation(context: ConversationContext): {
   response: string;
   nextStep: string;
@@ -46,128 +46,240 @@ function fallbackConversation(context: ConversationContext): {
   const userMessage = context.messages[context.messages.length - 1]?.content || "";
   
   // Normalize the input (convert word numbers to digits, etc.)
-  const { normalized, detectedDestination, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
+  const { normalized, detectedDestination, isCountry, suggestedCities, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
   
-  // Step 1: Get destination
+  // Step 1: Get destination (country or city)
   if (!context.destination) {
-    // Try fuzzy matching for destination
-    const destination = detectedDestination || fuzzyMatchDestination(userMessage);
-    
-    if (destination) {
-      return {
-        response: `Great choice! ${destination} is amazing. How many days are you planning to stay?`,
-        nextStep: "question",
-        extractedInfo: { destination }
-      };
+    if (detectedDestination) {
+      // Check if it's a country - if so, suggest cities
+      if (isCountry && suggestedCities && suggestedCities.length > 0) {
+        const cityList = suggestedCities.slice(0, 4);
+        return {
+          response: `${detectedDestination} sounds wonderful! Which city are you thinking about? ${cityList.join(', ')} are all amazing, or perhaps you have another city in mind?`,
+          nextStep: "question",
+          options: cityList,
+          extractedInfo: {} // Don't save destination yet, wait for city selection
+        };
+      } else {
+        // It's a specific city, proceed normally
+        return {
+          response: `Excellent choice! ${detectedDestination} is an amazing destination. How long are you planning to stay there?`,
+          nextStep: "question",
+          extractedInfo: { destination: detectedDestination }
+        };
+      }
     } else {
+      // Check if they're responding to a city suggestion from a previous country selection
+      const previousMessages = context.messages.slice(-2, -1);
+      const previousMessage = previousMessages[0]?.content || "";
+      if (previousMessage.includes("Which city")) {
+        // They might be selecting a city from previous suggestions
+        const cityMatch = fuzzyMatchDestination(userMessage);
+        if (cityMatch.destination && !cityMatch.isCountry) {
+          return {
+            response: `Perfect! ${cityMatch.destination} it is. How many days will you be exploring there?`,
+            nextStep: "question",
+            extractedInfo: { destination: cityMatch.destination }
+          };
+        }
+      }
+      
       // Suggest correction if input seems like a typo
       const correction = suggestCorrection(userMessage);
       if (correction) {
         return {
-          response: `I didn't quite catch that. ${correction} Or you can tell me any destination you'd like to visit!`,
+          response: `Hmm, I'm not sure I caught that. ${correction} Feel free to tell me any destination you have in mind!`,
           nextStep: "question",
-          options: ["London", "Paris", "Tokyo", "New York", "Rome"]
+          options: ["Japan", "France", "Italy", "USA", "Spain"]
         };
       }
       
-      // Default prompt for destination
+      // Initial greeting - more conversational
       return {
-        response: "I'd love to help you plan a trip! Where would you like to go? You can choose from popular destinations or tell me any place you have in mind.",
+        response: "Hey there! I'm excited to help you plan your next adventure. Where are you dreaming of going? Could be a country, a city, or even just a vibe you're after!",
         nextStep: "question",
-        options: ["London", "Paris", "Tokyo", "New York", "Rome"]
+        options: ["Japan", "France", "Italy", "USA", "Spain"]
       };
     }
   }
   
-  // Step 2: Get number of days
+  // Step 2: Get number of days - more conversational
   if (!context.days) {
     if (detectedDays && detectedDays > 0 && detectedDays <= 30) {
+      // Vary response based on trip length
+      let dayResponse = "";
+      if (detectedDays <= 3) {
+        dayResponse = `A quick ${detectedDays}-day getaway to ${context.destination} - perfect for a weekend escape!`;
+      } else if (detectedDays <= 7) {
+        dayResponse = `Nice! ${detectedDays} days in ${context.destination} gives you enough time to really experience the city.`;
+      } else {
+        dayResponse = `Wonderful! ${detectedDays} days in ${context.destination} - you'll have time to explore at a relaxed pace.`;
+      }
       return {
-        response: `Perfect! ${detectedDays} days in ${context.destination} sounds wonderful. How many people will be traveling?`,
+        response: `${dayResponse} Are you traveling solo or with others?`,
         nextStep: "question",
         extractedInfo: { days: detectedDays }
       };
     } else if (detectedDays && detectedDays > 30) {
       return {
-        response: "That's quite a long trip! For now, I can help plan trips up to 30 days. How many days would you like to stay (1-30)?",
-        nextStep: "question"
+        response: "Wow, that's an epic journey! I typically help with trips up to 30 days to keep things focused. How about we plan for a shorter duration?",
+        nextStep: "question",
+        options: ["1 week", "2 weeks", "3 weeks", "1 month"]
       };
     } else {
-      return {
-        response: `How many days are you planning to spend in ${context.destination}? You can tell me in any format (e.g., "5 days", "five days", "a week").`,
-        nextStep: "question",
-        options: ["3 days", "5 days", "7 days", "10 days"]
-      };
-    }
-  }
-  
-  // Step 3: Get number of people
-  if (!context.people) {
-    if (detectedPeople && detectedPeople > 0 && detectedPeople <= 20) {
-      return {
-        response: `Excellent! For ${detectedPeople} ${detectedPeople === 1 ? 'person' : 'people'}. What type of experience are you looking for?`,
-        nextStep: "question",
-        options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
-        extractedInfo: { people: detectedPeople }
-      };
-    } else if (detectedPeople && detectedPeople > 20) {
-      return {
-        response: "That's a large group! I can help plan for groups up to 20 people. How many travelers will there be?",
-        nextStep: "question"
-      };
-    } else {
-      // Check for informal people counts
-      if (normalized.includes("solo") || normalized.includes("alone") || normalized.includes("myself")) {
+      // Check for informal duration mentions
+      const lowerNormalized = normalized.toLowerCase();
+      if (lowerNormalized.includes("weekend")) {
         return {
-          response: "Perfect! A solo adventure. What type of experience are you looking for?",
+          response: `A weekend trip to ${context.destination} sounds perfect! So that's about 2-3 days. Who's joining you on this adventure?`,
           nextStep: "question",
-          options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
-          extractedInfo: { people: 1 }
+          extractedInfo: { days: 3 }
         };
-      } else if (normalized.includes("couple") || normalized.includes("two of us")) {
+      } else if (lowerNormalized.includes("week")) {
+        const weeks = lowerNormalized.includes("two") ? 14 : lowerNormalized.includes("three") ? 21 : 7;
         return {
-          response: "Excellent! For 2 people. What type of experience are you looking for?",
+          response: `${weeks === 7 ? 'A week' : weeks === 14 ? 'Two weeks' : 'Three weeks'} in ${context.destination} - perfect amount of time! Will you be traveling alone or with company?`,
           nextStep: "question",
-          options: ["Classic sightseeing", "Food & dining focused", "Budget-friendly"],
-          extractedInfo: { people: 2 }
-        };
-      } else if (normalized.includes("family")) {
-        return {
-          response: "A family trip sounds wonderful! How many people total will be traveling?",
-          nextStep: "question",
-          options: ["2 people", "3 people", "4 people", "5+ people"]
+          extractedInfo: { days: weeks }
         };
       }
       
       return {
-        response: `How many people will be traveling to ${context.destination}? You can say things like "just me", "2 people", "a family of four", etc.`,
+        response: `How long are you thinking of staying in ${context.destination}? A weekend getaway? A week-long adventure? Or something else?`,
         nextStep: "question",
-        options: ["Just me", "2 people", "3-4 people", "5+ people"]
+        options: ["Weekend (2-3 days)", "One week", "10 days", "Two weeks"]
       };
     }
   }
   
-  // Step 4: Get theme/preference
+  // Step 3: Get number of people - more natural conversation
+  if (!context.people) {
+    if (detectedPeople && detectedPeople > 0 && detectedPeople <= 20) {
+      let peopleResponse = "";
+      if (detectedPeople === 1) {
+        peopleResponse = "Solo travel - love it! There's something special about exploring on your own terms.";
+      } else if (detectedPeople === 2) {
+        peopleResponse = "Perfect for two! Whether it's romance or friendship, traveling as a pair is always fun.";
+      } else if (detectedPeople <= 4) {
+        peopleResponse = `Nice small group of ${detectedPeople}! That's ideal for flexibility and shared experiences.`;
+      } else {
+        peopleResponse = `A group of ${detectedPeople} - that'll be quite the adventure!`;
+      }
+      
+      return {
+        response: `${peopleResponse} Now, what kind of trip vibe are you going for?`,
+        nextStep: "question",
+        options: ["Must-see highlights", "Local food & culture", "Hidden gems", "Mix of everything"],
+        extractedInfo: { people: detectedPeople }
+      };
+    } else if (detectedPeople && detectedPeople > 20) {
+      return {
+        response: "Wow, that's quite the crew! I typically help with groups up to 20 to keep things manageable. Could you give me a more specific number?",
+        nextStep: "question"
+      };
+    } else {
+      // Check for informal people counts
+      const lowerNormalized = normalized.toLowerCase();
+      if (lowerNormalized.includes("solo") || lowerNormalized.includes("alone") || 
+          lowerNormalized.includes("myself") || lowerNormalized.includes("just me")) {
+        return {
+          response: "Solo adventure it is! I love the freedom of traveling alone. What kind of experiences are you most excited about?",
+          nextStep: "question",
+          options: ["Must-see highlights", "Local food scene", "Off the beaten path", "A bit of everything"],
+          extractedInfo: { people: 1 }
+        };
+      } else if (lowerNormalized.includes("couple") || lowerNormalized.includes("partner") ||
+                 lowerNormalized.includes("boyfriend") || lowerNormalized.includes("girlfriend") ||
+                 lowerNormalized.includes("husband") || lowerNormalized.includes("wife")) {
+        return {
+          response: "How romantic! Traveling as a couple is always special. What kind of experiences would you both enjoy?",
+          nextStep: "question",
+          options: ["Classic romance", "Adventure together", "Foodie experiences", "Cultural immersion"],
+          extractedInfo: { people: 2 }
+        };
+      } else if (lowerNormalized.includes("family")) {
+        return {
+          response: "Family trips create the best memories! How many of you will be traveling together?",
+          nextStep: "question",
+          options: ["3 people", "4 people", "5 people", "More than 5"]
+        };
+      } else if (lowerNormalized.includes("friends") || lowerNormalized.includes("group")) {
+        return {
+          response: "Traveling with friends is always a blast! How many in your crew?",
+          nextStep: "question",
+          options: ["3-4 friends", "5-6 friends", "7-8 friends", "Larger group"]
+        };
+      }
+      
+      return {
+        response: `Will you be exploring ${context.destination} solo or with others? I can customize the experience either way!`,
+        nextStep: "question",
+        options: ["Solo adventure", "Couple's trip", "Family vacation", "Friends getaway"]
+      };
+    }
+  }
+  
+  // Step 4: Get theme/preference - natural conversation style
   if (!context.theme) {
     let theme = "classic";
     const lowerMessage = normalized.toLowerCase();
     
-    if (lowerMessage.includes("food") || lowerMessage.includes("dining") || 
+    // Map various natural expressions to themes
+    if (lowerMessage.includes("food") || lowerMessage.includes("eat") || 
         lowerMessage.includes("culinary") || lowerMessage.includes("restaurant") ||
-        lowerMessage.includes("foodie")) {
+        lowerMessage.includes("foodie") || lowerMessage.includes("cuisine") ||
+        lowerMessage.includes("local food") || lowerMessage.includes("dining")) {
       theme = "foodie";
     } else if (lowerMessage.includes("budget") || lowerMessage.includes("cheap") || 
                lowerMessage.includes("affordable") || lowerMessage.includes("economical") ||
-               lowerMessage.includes("save money")) {
+               lowerMessage.includes("save") || lowerMessage.includes("backpack")) {
       theme = "budget";
-    } else if (lowerMessage.includes("classic") || lowerMessage.includes("sightseeing") ||
+    } else if (lowerMessage.includes("highlight") || lowerMessage.includes("must-see") ||
                lowerMessage.includes("tourist") || lowerMessage.includes("landmark") ||
-               lowerMessage.includes("must-see")) {
+               lowerMessage.includes("famous") || lowerMessage.includes("popular") ||
+               lowerMessage.includes("classic") || lowerMessage.includes("main")) {
       theme = "classic";
+    } else if (lowerMessage.includes("hidden") || lowerMessage.includes("local") ||
+               lowerMessage.includes("authentic") || lowerMessage.includes("off") ||
+               lowerMessage.includes("secret")) {
+      theme = "adventure";
+    } else if (lowerMessage.includes("everything") || lowerMessage.includes("mix") ||
+               lowerMessage.includes("variety") || lowerMessage.includes("both") ||
+               lowerMessage.includes("all")) {
+      theme = "balanced";
+    }
+    
+    // Create a personalized summary message
+    let summaryMessage = "";
+    if (context.people === 1) {
+      summaryMessage = `Brilliant! I'm crafting ${context.days}-day solo adventure packages for ${context.destination}`;
+    } else if (context.people === 2) {
+      summaryMessage = `Perfect! Creating ${context.days}-day packages for two in ${context.destination}`;
+    } else {
+      summaryMessage = `Excellent! Putting together ${context.days}-day packages for your group of ${context.people} in ${context.destination}`;
+    }
+    
+    // Add theme-specific flavor
+    let themeMessage = "";
+    switch(theme) {
+      case "foodie":
+        themeMessage = " with a focus on amazing local cuisine and dining experiences";
+        break;
+      case "budget":
+        themeMessage = " that won't break the bank but still hit all the right spots";
+        break;
+      case "adventure":
+        themeMessage = " featuring hidden gems and local favorites";
+        break;
+      case "balanced":
+        themeMessage = " with a perfect mix of must-sees and local experiences";
+        break;
+      default:
+        themeMessage = " covering all the iconic highlights";
     }
     
     return {
-      response: `Perfect! I have all the information I need. Let me create personalized travel packages for your ${context.days}-day trip to ${context.destination} for ${context.people} ${context.people === 1 ? 'person' : 'people'}. This will take a moment...`,
+      response: `${summaryMessage}${themeMessage}. Give me just a moment to pull together some amazing options using real places and current recommendations...`,
       nextStep: "generate",
       extractedInfo: { theme }
     };
@@ -175,7 +287,7 @@ function fallbackConversation(context: ConversationContext): {
   
   // Default response if we have all info but somehow reach here
   return {
-    response: "I have all your travel details! Let me create your personalized packages now...",
+    response: `Great! I've got everything I need for your ${context.days}-day trip to ${context.destination}. Let me create some personalized packages for you...`,
     nextStep: "generate"
   };
 }

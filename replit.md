@@ -29,6 +29,14 @@ A conversational AI travel planning platform that creates personalized travel pa
 - 2025-08-19: Initial project setup with conversational travel planning concept
 - Removed budget breakdown and accommodation suggestions from scope
 - Focused on core conversational experience and POI integration
+- 2025-08-20: Enhanced chat experience with major improvements:
+  - Added city-level destination support (recognizes both countries and cities)
+  - Implemented fuzzy matching for typos (e.g., "lodon" → London, "kioto" → Kyoto)
+  - Natural number parsing (accepts "five days" and "5 days")
+  - Auto-focus on chat input after messages
+  - Country → City flow (suggests 4-5 popular cities when country selected)
+  - More conversational, less form-like dialogue
+  - Graceful error recovery without freezing
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

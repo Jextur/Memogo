@@ -24,102 +24,173 @@ export function normalizeNumberInput(text: string): string {
   return normalized;
 }
 
-// Fuzzy matching for destinations
-export function fuzzyMatchDestination(input: string): string | null {
+// Popular cities by country
+export const popularCities: Record<string, string[]> = {
+  'japan': ['Tokyo', 'Kyoto', 'Osaka', 'Yokohama', 'Hiroshima'],
+  'france': ['Paris', 'Nice', 'Lyon', 'Marseille', 'Bordeaux'],
+  'italy': ['Rome', 'Venice', 'Florence', 'Milan', 'Naples'],
+  'spain': ['Barcelona', 'Madrid', 'Seville', 'Valencia', 'Granada'],
+  'usa': ['New York', 'Los Angeles', 'San Francisco', 'Miami', 'Las Vegas'],
+  'uk': ['London', 'Edinburgh', 'Manchester', 'Liverpool', 'Cambridge'],
+  'england': ['London', 'Manchester', 'Liverpool', 'Cambridge', 'Oxford'],
+  'thailand': ['Bangkok', 'Phuket', 'Chiang Mai', 'Pattaya', 'Krabi'],
+  'australia': ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Gold Coast'],
+  'germany': ['Berlin', 'Munich', 'Hamburg', 'Frankfurt', 'Cologne'],
+  'netherlands': ['Amsterdam', 'Rotterdam', 'The Hague', 'Utrecht', 'Eindhoven'],
+  'india': ['Delhi', 'Mumbai', 'Goa', 'Jaipur', 'Kerala'],
+  'china': ['Beijing', 'Shanghai', 'Hong Kong', 'Shenzhen', 'Guangzhou'],
+  'korea': ['Seoul', 'Busan', 'Jeju', 'Incheon', 'Daegu'],
+  'south korea': ['Seoul', 'Busan', 'Jeju', 'Incheon', 'Daegu'],
+  'mexico': ['Mexico City', 'Cancun', 'Guadalajara', 'Playa del Carmen', 'Cabo'],
+  'brazil': ['Rio de Janeiro', 'São Paulo', 'Salvador', 'Brasília', 'Florianópolis'],
+  'canada': ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa'],
+  'dubai': ['Dubai'],
+  'uae': ['Dubai', 'Abu Dhabi', 'Sharjah'],
+  'singapore': ['Singapore'],
+  'greece': ['Athens', 'Santorini', 'Mykonos', 'Crete', 'Rhodes'],
+  'portugal': ['Lisbon', 'Porto', 'Algarve', 'Madeira', 'Coimbra'],
+  'turkey': ['Istanbul', 'Cappadocia', 'Antalya', 'Izmir', 'Ankara']
+};
+
+// Get popular cities for a country
+export function getPopularCitiesForCountry(country: string): string[] {
+  const normalized = country.toLowerCase().trim();
+  return popularCities[normalized] || [];
+}
+
+// Fuzzy matching for destinations (both countries and cities)
+export function fuzzyMatchDestination(input: string): { 
+  destination: string | null; 
+  isCountry: boolean;
+  suggestedCities?: string[];
+} {
   const normalized = input.toLowerCase().trim();
   
-  // Common typos and variations
+  // Check if it's a known country first
+  const countryMatch = Object.keys(popularCities).find(country => {
+    return country === normalized || 
+           levenshteinDistance(normalized, country) <= 2 ||
+           country.includes(normalized) ||
+           normalized.includes(country);
+  });
+  
+  if (countryMatch) {
+    const cities = getPopularCitiesForCountry(countryMatch);
+    return {
+      destination: countryMatch.charAt(0).toUpperCase() + countryMatch.slice(1),
+      isCountry: true,
+      suggestedCities: cities.slice(0, 5) // Return top 5 cities
+    };
+  }
+  
+  // Common city typos and variations
   const destinationMap: Record<string, string> = {
+    // Japanese cities
+    'tokyo': 'Tokyo, Japan',
+    'tokio': 'Tokyo, Japan',
+    'kyoto': 'Kyoto, Japan',
+    'kioto': 'Kyoto, Japan',
+    'osaka': 'Osaka, Japan',
+    'yokohama': 'Yokohama, Japan',
+    'hiroshima': 'Hiroshima, Japan',
+    
     // London variations
     'lodon': 'London, England',
     'londen': 'London, England',
     'londn': 'London, England',
     'london': 'London, England',
-    'uk': 'London, England',
-    'england': 'London, England',
-    'britain': 'London, England',
-    'united kingdom': 'London, England',
     
     // Paris variations
     'paris': 'Paris, France',
     'pari': 'Paris, France',
     'parris': 'Paris, France',
-    'pars': 'Paris, France',
-    'france': 'Paris, France',
-    'french': 'Paris, France',
+    'nice': 'Nice, France',
+    'lyon': 'Lyon, France',
+    'marseille': 'Marseille, France',
     
-    // Tokyo variations
-    'tokyo': 'Tokyo, Japan',
-    'tokio': 'Tokyo, Japan',
-    'toky': 'Tokyo, Japan',
-    'japan': 'Tokyo, Japan',
-    'japn': 'Tokyo, Japan',
-    'nippon': 'Tokyo, Japan',
+    // Italian cities
+    'rome': 'Rome, Italy',
+    'roma': 'Rome, Italy',
+    'venice': 'Venice, Italy',
+    'venezia': 'Venice, Italy',
+    'florence': 'Florence, Italy',
+    'firenze': 'Florence, Italy',
+    'milan': 'Milan, Italy',
+    'milano': 'Milan, Italy',
+    'naples': 'Naples, Italy',
+    'napoli': 'Naples, Italy',
     
-    // New York variations
+    // Spanish cities
+    'barcelona': 'Barcelona, Spain',
+    'barca': 'Barcelona, Spain',
+    'madrid': 'Madrid, Spain',
+    'seville': 'Seville, Spain',
+    'sevilla': 'Seville, Spain',
+    'valencia': 'Valencia, Spain',
+    'granada': 'Granada, Spain',
+    
+    // US cities
     'new york': 'New York, USA',
     'newyork': 'New York, USA',
     'ny': 'New York, USA',
     'nyc': 'New York, USA',
     'manhattan': 'New York, USA',
-    'big apple': 'New York, USA',
+    'los angeles': 'Los Angeles, USA',
+    'la': 'Los Angeles, USA',
+    'san francisco': 'San Francisco, USA',
+    'sf': 'San Francisco, USA',
+    'miami': 'Miami, USA',
+    'vegas': 'Las Vegas, USA',
+    'las vegas': 'Las Vegas, USA',
     
-    // Rome variations
-    'rome': 'Rome, Italy',
-    'roma': 'Rome, Italy',
-    'italy': 'Rome, Italy',
-    'italian': 'Rome, Italy',
-    
-    // Barcelona variations
-    'barcelona': 'Barcelona, Spain',
-    'barca': 'Barcelona, Spain',
-    'spain': 'Barcelona, Spain',
-    'espana': 'Barcelona, Spain',
-    
-    // Dubai variations
+    // Other major cities
     'dubai': 'Dubai, UAE',
     'dubay': 'Dubai, UAE',
-    'uae': 'Dubai, UAE',
-    'emirates': 'Dubai, UAE',
-    
-    // Bangkok variations
     'bangkok': 'Bangkok, Thailand',
-    'thailand': 'Bangkok, Thailand',
-    'thai': 'Bangkok, Thailand',
-    
-    // Sydney variations
     'sydney': 'Sydney, Australia',
     'sidney': 'Sydney, Australia',
-    'australia': 'Sydney, Australia',
-    'aussie': 'Sydney, Australia',
-    
-    // Singapore variations
     'singapore': 'Singapore',
-    'singapur': 'Singapore',
-    'sing': 'Singapore',
-    'sg': 'Singapore'
+    'amsterdam': 'Amsterdam, Netherlands',
+    'berlin': 'Berlin, Germany',
+    'munich': 'Munich, Germany',
+    'istanbul': 'Istanbul, Turkey',
+    'athens': 'Athens, Greece',
+    'lisbon': 'Lisbon, Portugal',
+    'lisboa': 'Lisbon, Portugal'
   };
   
-  // Direct match
+  // Direct city match
   if (destinationMap[normalized]) {
-    return destinationMap[normalized];
+    return {
+      destination: destinationMap[normalized],
+      isCountry: false
+    };
   }
   
-  // Fuzzy matching using Levenshtein distance
+  // Fuzzy matching using Levenshtein distance for cities
   for (const [key, value] of Object.entries(destinationMap)) {
     if (levenshteinDistance(normalized, key) <= 2) {
-      return value;
+      return {
+        destination: value,
+        isCountry: false
+      };
     }
   }
   
-  // Check if input contains any destination keywords
+  // Check if input contains any city keywords
   for (const [key, value] of Object.entries(destinationMap)) {
     if (normalized.includes(key) || key.includes(normalized)) {
-      return value;
+      return {
+        destination: value,
+        isCountry: false
+      };
     }
   }
   
-  return null;
+  return {
+    destination: null,
+    isCountry: false
+  };
 }
 
 // Simple Levenshtein distance implementation for fuzzy matching
@@ -155,6 +226,8 @@ function levenshteinDistance(a: string, b: string): number {
 export function normalizeUserInput(text: string): {
   normalized: string;
   detectedDestination?: string;
+  isCountry?: boolean;
+  suggestedCities?: string[];
   detectedDays?: number;
   detectedPeople?: number;
 } {
@@ -166,10 +239,12 @@ export function normalizeUserInput(text: string): {
   const normalizedText = normalizeNumberInput(text);
   result.normalized = normalizedText;
   
-  // Try to detect destination
-  const destination = fuzzyMatchDestination(text);
-  if (destination) {
-    result.detectedDestination = destination;
+  // Try to detect destination (country or city)
+  const destinationMatch = fuzzyMatchDestination(text);
+  if (destinationMatch.destination) {
+    result.detectedDestination = destinationMatch.destination;
+    result.isCountry = destinationMatch.isCountry;
+    result.suggestedCities = destinationMatch.suggestedCities;
   }
   
   // Try to extract days
@@ -193,8 +268,8 @@ export function suggestCorrection(input: string): string | null {
   
   // Check if it looks like a destination typo
   const possibleDestination = fuzzyMatchDestination(normalized);
-  if (possibleDestination) {
-    return `Did you mean ${possibleDestination}?`;
+  if (possibleDestination.destination) {
+    return `Did you mean ${possibleDestination.destination}?`;
   }
   
   // Check if it's close to known travel-related words
