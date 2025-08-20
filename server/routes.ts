@@ -3,10 +3,14 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { continueConversation, generateTravelPackages, refineItinerary } from "./services/openai";
 import { searchPlaces, getPlaceDetails, getPhotoUrl } from "./services/googlePlaces";
-import { insertConversationSchema, insertTravelPackageSchema, insertPOISchema } from "@shared/schema";
+import { insertConversationSchema, insertTravelPackageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
+import cityRoutes from "./routes/cities";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register city routes
+  app.use('/api/cities', cityRoutes);
+  
   // Conversation endpoints
   app.post("/api/conversation", async (req, res) => {
     try {
