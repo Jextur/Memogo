@@ -253,10 +253,30 @@ export function normalizeUserInput(text: string): {
     result.detectedDays = parseInt(daysMatch[1]);
   }
   
-  // Try to extract people count
-  const peopleMatch = normalizedText.match(/(\d+)\s*(people|person|traveler|adult|guest)/i);
+  // Try to extract people count - more flexible patterns
+  // Direct number without units
+  const simpleNumberMatch = normalizedText.match(/^(\d+)$/);
+  if (simpleNumberMatch && !result.detectedDays) {
+    // If we already have destination and days, this number is likely people count
+    result.detectedPeople = parseInt(simpleNumberMatch[1]);
+  }
+  
+  // Number with people-related words
+  const peopleMatch = normalizedText.match(/(\d+)\s*(people|person|traveler|adult|guest|of us)?/i);
   if (peopleMatch) {
     result.detectedPeople = parseInt(peopleMatch[1]);
+  }
+  
+  // "We are X" patterns
+  const weAreMatch = normalizedText.match(/we\s*(?:are|'re)?\s*(\d+)/i);
+  if (weAreMatch) {
+    result.detectedPeople = parseInt(weAreMatch[1]);
+  }
+  
+  // "X of us" patterns
+  const ofUsMatch = normalizedText.match(/(\d+)\s*of\s*us/i);
+  if (ofUsMatch) {
+    result.detectedPeople = parseInt(ofUsMatch[1]);
   }
   
   return result;

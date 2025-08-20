@@ -45,8 +45,25 @@ function fallbackConversation(context: ConversationContext): {
 } {
   const userMessage = context.messages[context.messages.length - 1]?.content || "";
   
+  // Check what step we're on based on context to help with ambiguous inputs
+  const isAskingForDays = context.destination && !context.days;
+  const isAskingForPeople = context.destination && context.days && !context.people;
+  const isAskingForTheme = context.destination && context.days && context.people && !context.theme;
+  
   // Normalize the input (convert word numbers to digits, etc.)
-  const { normalized, detectedDestination, isCountry, suggestedCities, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
+  let { normalized, detectedDestination, isCountry, suggestedCities, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
+  
+  // Context-aware interpretation of simple numbers
+  if (/^\d+$/.test(userMessage.trim()) || /^[a-z]+$/.test(userMessage.trim().toLowerCase())) {
+    const simpleNumber = parseInt(normalizeUserInput(userMessage.trim()).normalized);
+    if (!isNaN(simpleNumber)) {
+      if (isAskingForDays && !detectedDays) {
+        detectedDays = simpleNumber;
+      } else if (isAskingForPeople && !detectedPeople) {
+        detectedPeople = simpleNumber;
+      }
+    }
+  }
   
   // Step 1: Get destination (country or city)
   if (!context.destination) {
@@ -154,6 +171,10 @@ function fallbackConversation(context: ConversationContext): {
   
   // Step 3: Get number of people - more natural conversation
   if (!context.people) {
+    // First check if we can detect a number directly in the input
+    const lowerNormalized = normalized.toLowerCase();
+    
+    // Check for direct number input (handles "3", "three", "we are 3", etc.)
     if (detectedPeople && detectedPeople > 0 && detectedPeople <= 20) {
       let peopleResponse = "";
       if (detectedPeople === 1) {
@@ -166,22 +187,59 @@ function fallbackConversation(context: ConversationContext): {
         peopleResponse = `A group of ${detectedPeople} - that'll be quite the adventure!`;
       }
       
+      // Directly proceed to theme selection - no redundant confirmation
       return {
         response: `${peopleResponse} Now, what kind of trip vibe are you going for?`,
         nextStep: "question",
         options: ["Must-see highlights", "Local food & culture", "Hidden gems", "Mix of everything"],
         extractedInfo: { people: detectedPeople }
       };
-    } else if (detectedPeople && detectedPeople > 20) {
+    } 
+    
+    // Handle numbers too large
+    if (detectedPeople && detectedPeople > 20) {
       return {
         response: "Wow, that's quite the crew! I typically help with groups up to 20 to keep things manageable. Could you give me a more specific number?",
         nextStep: "question"
       };
-    } else {
-      // Check for informal people counts
-      const lowerNormalized = normalized.toLowerCase();
+    }
+    
+    // Check for various people count expressions even without explicit numbers
+    if (lowerNormalized.includes("just me") || lowerNormalized.includes("only me") ||
+        lowerNormalized.includes("by myself") || lowerNormalized.includes("on my own")) {
+      return {
+        response: "Solo adventure it is! I love the freedom of traveling alone. What kind of experiences are you most excited about?",
+        nextStep: "question",
+        options: ["Must-see highlights", "Local food scene", "Off the beaten path", "A bit of everything"],
+        extractedInfo: { people: 1 }
+      };
+    }
+    
+    // Handle "we are X" patterns
+    const weAreMatch = lowerNormalized.match(/we\s*(?:are|'re)?\s*(\w+)/);
+    if (weAreMatch) {
+      const numberWord = weAreMatch[1];
+      // Try to parse if it's a number word
+      const { detectedPeople: parsedPeople } = normalizeUserInput(numberWord);
+      if (parsedPeople && parsedPeople > 0 && parsedPeople <= 20) {
+        let peopleResponse = parsedPeople <= 4 ? 
+          `Great, ${parsedPeople} of you traveling together!` :
+          `A group of ${parsedPeople} - that'll be fun!`;
+        
+        return {
+          response: `${peopleResponse} What kind of experiences are you looking for?`,
+          nextStep: "question",
+          options: ["Must-see highlights", "Local food & culture", "Hidden gems", "Mix of everything"],
+          extractedInfo: { people: parsedPeople }
+        };
+      }
+    }
+    
+    // Otherwise, check for informal people counts
+    else {
+      // Check for other informal people counts
       if (lowerNormalized.includes("solo") || lowerNormalized.includes("alone") || 
-          lowerNormalized.includes("myself") || lowerNormalized.includes("just me")) {
+          lowerNormalized.includes("myself")) {
         return {
           response: "Solo adventure it is! I love the freedom of traveling alone. What kind of experiences are you most excited about?",
           nextStep: "question",
@@ -190,7 +248,8 @@ function fallbackConversation(context: ConversationContext): {
         };
       } else if (lowerNormalized.includes("couple") || lowerNormalized.includes("partner") ||
                  lowerNormalized.includes("boyfriend") || lowerNormalized.includes("girlfriend") ||
-                 lowerNormalized.includes("husband") || lowerNormalized.includes("wife")) {
+                 lowerNormalized.includes("husband") || lowerNormalized.includes("wife") ||
+                 lowerNormalized.includes("two of us") || lowerNormalized.includes("both of us")) {
         return {
           response: "How romantic! Traveling as a couple is always special. What kind of experiences would you both enjoy?",
           nextStep: "question",
@@ -198,12 +257,14 @@ function fallbackConversation(context: ConversationContext): {
           extractedInfo: { people: 2 }
         };
       } else if (lowerNormalized.includes("family")) {
+        // Only ask for specifics if they just say "family" without a number
         return {
           response: "Family trips create the best memories! How many of you will be traveling together?",
           nextStep: "question",
           options: ["3 people", "4 people", "5 people", "More than 5"]
         };
       } else if (lowerNormalized.includes("friends") || lowerNormalized.includes("group")) {
+        // Only ask for specifics if they don't provide a number
         return {
           response: "Traveling with friends is always a blast! How many in your crew?",
           nextStep: "question",
@@ -211,8 +272,9 @@ function fallbackConversation(context: ConversationContext): {
         };
       }
       
+      // Initial question if nothing detected
       return {
-        response: `Will you be exploring ${context.destination} solo or with others? I can customize the experience either way!`,
+        response: `Will you be exploring ${context.destination} solo or with others? Just let me know the number!`,
         nextStep: "question",
         options: ["Solo adventure", "Couple's trip", "Family vacation", "Friends getaway"]
       };
