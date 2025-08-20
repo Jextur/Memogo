@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { refinePackage, exportPackage } from "@/lib/api";
-import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils, Loader2, Sparkles } from "lucide-react";
 
 interface DayByDayViewProps {
   package: TravelPackage;
@@ -18,6 +18,7 @@ interface DayByDayViewProps {
 export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewProps) {
   const [selectedDay, setSelectedDay] = useState<number>(1);
   const [refinementInput, setRefinementInput] = useState("");
+  const [refinementDay, setRefinementDay] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const refineMutation = useMutation({
@@ -25,7 +26,9 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
       refinePackage(packageId, refinementRequest),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/packages', pkg.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/conversation', pkg.conversationId, 'packages'] });
       setRefinementInput("");
+      setRefinementDay(null);
     },
   });
 
@@ -77,9 +80,15 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
 
   const handleRefinement = () => {
     if (!refinementInput.trim() || refineMutation.isPending) return;
+    
+    // Add day context if refining a specific day
+    const request = refinementDay 
+      ? `For day ${refinementDay} only: ${refinementInput}`
+      : refinementInput;
+      
     refineMutation.mutate({
       packageId: pkg.id,
-      refinementRequest: refinementInput,
+      refinementRequest: request,
     });
   };
 
@@ -87,10 +96,32 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
     exportMutation.mutate(pkg.id);
   };
 
-  const removeActivity = (dayNumber: number, activityId: string) => {
-    // This would ideally be handled by a proper mutation
-    // For now, we'll trigger a refinement request
-    const refinementRequest = `Remove the activity with ID ${activityId} from day ${dayNumber}`;
+  const removeActivity = (dayNumber: number, activityId: string, activityName: string) => {
+    // Immediately update the UI optimistically
+    const updatedItinerary = [...itinerary];
+    const dayIndex = updatedItinerary.findIndex(d => d.day === dayNumber);
+    if (dayIndex !== -1) {
+      updatedItinerary[dayIndex] = {
+        ...updatedItinerary[dayIndex],
+        activities: updatedItinerary[dayIndex].activities.filter(a => a.id !== activityId)
+      };
+    }
+    
+    // Update local state immediately for responsive UI
+    queryClient.setQueryData(
+      ['/api/conversation', pkg.conversationId, 'packages'],
+      (old: any) => {
+        if (!old) return old;
+        return old.map((p: any) => 
+          p.id === pkg.id 
+            ? { ...p, itinerary: updatedItinerary }
+            : p
+        );
+      }
+    );
+    
+    // Send the removal request to backend
+    const refinementRequest = `Remove "${activityName}" from day ${dayNumber}`;
     refineMutation.mutate({
       packageId: pkg.id,
       refinementRequest,
@@ -241,7 +272,7 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                   variant="ghost"
                                   size="sm"
                                   className="absolute top-2 right-2 w-6 h-6 p-0 bg-red-500/20 text-red-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={() => removeActivity(currentDay.day, `activity-${index}`)}
+                                  onClick={() => removeActivity(currentDay.day, `activity-${index}`, activityName)}
                                 >
                                   <X className="w-3 h-3" />
                                 </Button>
@@ -261,10 +292,24 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                     <div className="flex items-center justify-between mb-1">
                                       <h5 className="font-medium text-brand-text">{activityName}</h5>
                                     </div>
-                                    <p className="text-brand-mute text-sm">
-                                      {activityType === "restaurant" ? "Restaurant" : 
-                                       activityType === "accommodation" ? "Hotel" : "Attraction"}
+                                    {/* Add description for POI */}
+                                    <p className="text-brand-mute text-sm mb-2">
+                                      {typeof activity === 'object' && activity.description ? 
+                                        activity.description : 
+                                        (activityType === "restaurant" ? "Experience local cuisine at this popular dining spot" : 
+                                         activityType === "accommodation" ? "Comfortable lodging with excellent amenities" : 
+                                         "Must-visit attraction showcasing local culture and heritage")}
                                     </p>
+                                    {/* Show rating if available */}
+                                    {typeof activity === 'object' && activity.rating && (
+                                      <div className="flex items-center space-x-1 mb-2">
+                                        <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                        <span className="text-xs text-brand-text">{activity.rating}</span>
+                                        {activity.userRatingsTotal && (
+                                          <span className="text-xs text-brand-mute">({activity.userRatingsTotal} reviews)</span>
+                                        )}
+                                      </div>
+                                    )}
                                     <div className="flex items-center space-x-2 mt-2">
                                       <Badge
                                         variant="outline"
@@ -324,13 +369,36 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
             <CardHeader>
               <CardTitle className="text-brand-text">Refine Your Itinerary</CardTitle>
               <p className="text-brand-mute text-sm">
-                Not satisfied with this day? Ask our AI to make changes:
+                {refinementDay ? `Refining Day ${refinementDay} only` : "Ask our AI to make changes to your trip"}
               </p>
             </CardHeader>
             <CardContent>
+              {/* Day selector for targeted refinement */}
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="text-sm text-brand-mute">Scope:</span>
+                <Button
+                  size="sm"
+                  variant={!refinementDay ? "default" : "outline"}
+                  onClick={() => setRefinementDay(null)}
+                  className={`h-7 ${!refinementDay ? "bg-brand-accent text-brand-bg" : "text-brand-text border-brand-border"}`}
+                >
+                  Entire Trip
+                </Button>
+                <Button
+                  size="sm"
+                  variant={refinementDay === selectedDay ? "default" : "outline"}
+                  onClick={() => setRefinementDay(selectedDay)}
+                  className={`h-7 ${refinementDay === selectedDay ? "bg-brand-accent text-brand-bg" : "text-brand-text border-brand-border"}`}
+                >
+                  Day {selectedDay} Only
+                </Button>
+              </div>
+              
               <div className="flex space-x-2 mb-2">
                 <Input
-                  placeholder="e.g., Remove the museum and add more food spots..."
+                  placeholder={refinementDay 
+                    ? `e.g., Replace morning activity with shopping, Add local market visit...`
+                    : `e.g., Add more cultural sites, Include budget-friendly options...`}
                   value={refinementInput}
                   onChange={(e) => setRefinementInput(e.target.value)}
                   className="flex-1 bg-brand-bg border-brand-border text-brand-text placeholder:text-brand-mute focus:border-brand-accent"
@@ -342,9 +410,15 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                   className="bg-brand-accent text-brand-bg hover:bg-yellow-500 flex-shrink-0"
                 >
                   {refineMutation.isPending ? (
-                    <LoadingSpinner size="sm" className="mr-2" />
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Refining...
+                    </>
                   ) : (
-                    "✨ Refine"
+                    <>
+                      <Sparkles className="w-4 h-4 mr-1" />
+                      {refinementDay ? `Refine Day ${refinementDay}` : "Refine All"}
+                    </>
                   )}
                 </Button>
               </div>

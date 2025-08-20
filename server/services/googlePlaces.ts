@@ -9,9 +9,19 @@ export interface GooglePlacesResult {
   location?: { lat: number; lng: number };
   open_now?: boolean;
   photo_ref?: string;
+  description?: string;
+  editorial_summary?: string;
 }
 
-export async function searchPlaces(query: string): Promise<GooglePlacesResult[]> {
+// Quality filters for POIs
+export interface PlaceFilterOptions {
+  minRating?: number;
+  minReviews?: number;
+  relevantTypes?: string[];
+  theme?: string;
+}
+
+export async function searchPlaces(query: string, filters?: PlaceFilterOptions): Promise<GooglePlacesResult[]> {
   try {
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     if (!apiKey) {
@@ -23,11 +33,11 @@ export async function searchPlaces(query: string): Promise<GooglePlacesResult[]>
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.types,places.location,places.currentOpeningHours,places.photos"
+        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.priceLevel,places.types,places.location,places.currentOpeningHours,places.photos,places.editorialSummary"
       },
       body: JSON.stringify({ 
         textQuery: query, 
-        pageSize: 10,
+        pageSize: 20, // Get more results to filter
         languageCode: "en"
       })
     });
@@ -42,7 +52,7 @@ export async function searchPlaces(query: string): Promise<GooglePlacesResult[]>
       return [];
     }
     
-    return data.places.map((place: any): GooglePlacesResult => ({
+    let results = data.places.map((place: any): GooglePlacesResult => ({
       place_id: place.id,
       name: place.displayName?.text || place.displayName,
       rating: place.rating,
@@ -53,11 +63,95 @@ export async function searchPlaces(query: string): Promise<GooglePlacesResult[]>
       location: place.location,
       open_now: place.currentOpeningHours?.openNow,
       photo_ref: place.photos?.[0]?.name,
+      editorial_summary: place.editorialSummary?.text,
+      description: generatePlaceDescription(place)
     }));
+    
+    // Apply quality filters
+    if (filters) {
+      results = results.filter(place => {
+        // Filter by minimum rating (default 4.2)
+        if (filters.minRating && place.rating && place.rating < filters.minRating) {
+          return false;
+        }
+        
+        // Filter by minimum reviews (default 500)
+        if (filters.minReviews && place.user_ratings_total && place.user_ratings_total < filters.minReviews) {
+          return false;
+        }
+        
+        // Filter by relevant types for the theme
+        if (filters.relevantTypes && filters.relevantTypes.length > 0 && place.types) {
+          const hasRelevantType = place.types.some(type => 
+            filters.relevantTypes?.includes(type)
+          );
+          if (!hasRelevantType) {
+            return false;
+          }
+        }
+        
+        return true;
+      });
+    }
+    
+    // Sort by rating and review count
+    results.sort((a, b) => {
+      const scoreA = (a.rating || 0) * Math.log10((a.user_ratings_total || 1) + 1);
+      const scoreB = (b.rating || 0) * Math.log10((b.user_ratings_total || 1) + 1);
+      return scoreB - scoreA;
+    });
+    
+    // Return top 10 results
+    return results.slice(0, 10);
   } catch (error) {
     console.error("Google Places search error:", error);
     throw new Error("Failed to search places");
   }
+}
+
+// Generate contextual descriptions for POIs
+function generatePlaceDescription(place: any): string {
+  const name = place.displayName?.text || place.displayName;
+  const types = place.types || [];
+  const rating = place.rating;
+  const reviewCount = place.userRatingCount;
+  
+  // Build description based on place type and ratings
+  let description = "";
+  
+  if (types.includes("restaurant")) {
+    if (rating >= 4.5) {
+      description = `Highly acclaimed dining spot with ${reviewCount || 'many'} reviews`;
+    } else if (types.includes("japanese_restaurant")) {
+      description = "Authentic Japanese cuisine experience";
+    } else if (types.includes("italian_restaurant")) {
+      description = "Traditional Italian flavors in a welcoming atmosphere";
+    } else {
+      description = "Popular local restaurant";
+    }
+  } else if (types.includes("tourist_attraction") || types.includes("point_of_interest")) {
+    if (rating >= 4.5) {
+      description = `Must-visit attraction rated ${rating}/5 by travelers`;
+    } else {
+      description = "Notable landmark worth exploring";
+    }
+  } else if (types.includes("museum")) {
+    description = "Cultural institution showcasing local heritage";
+  } else if (types.includes("park")) {
+    description = "Scenic green space perfect for relaxation";
+  } else if (types.includes("shopping_mall") || types.includes("store")) {
+    description = "Shopping destination for local and international brands";
+  } else if (types.includes("cafe")) {
+    description = "Cozy spot for coffee and light refreshments";
+  } else if (types.includes("bar") || types.includes("night_club")) {
+    description = "Vibrant nightlife venue";
+  } else if (place.editorialSummary?.text) {
+    description = place.editorialSummary.text;
+  } else {
+    description = `Popular venue with ${rating || 'good'} rating`;
+  }
+  
+  return description;
 }
 
 export async function getPlaceDetails(placeId: string): Promise<GooglePlacesResult | null> {

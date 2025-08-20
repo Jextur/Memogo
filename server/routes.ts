@@ -240,23 +240,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google Places endpoints
   app.get("/api/places/search", async (req, res) => {
     try {
-      const { query } = req.query;
+      const { query, theme, minRating, minReviews } = req.query;
       
       if (!query || typeof query !== "string") {
         return res.status(400).json({ error: "Query parameter required" });
       }
       
-      const results = await searchPlaces(query);
+      // Apply quality filters
+      const filters = {
+        minRating: minRating ? parseFloat(minRating as string) : 4.2,
+        minReviews: minReviews ? parseInt(minReviews as string) : 500,
+        theme: theme as string | undefined
+      };
       
-      // Save POIs to storage
+      // Add theme-specific types
+      const relevantTypes: Record<string, string[]> = {
+        'foodie': ['restaurant', 'cafe', 'bakery', 'food'],
+        'culture': ['museum', 'art_gallery', 'tourist_attraction', 'point_of_interest'],
+        'adventure': ['park', 'tourist_attraction', 'natural_feature']
+      };
+      
+      if (theme && typeof theme === 'string' && relevantTypes[theme]) {
+        (filters as any).relevantTypes = relevantTypes[theme];
+      }
+      
+      const results = await searchPlaces(query, filters);
+      
+      // Save POIs to storage with descriptions
       await Promise.all(
         results.map(async (place) => {
           const existingPOI = await storage.getPOIByPlaceId(place.place_id);
           if (!existingPOI) {
             await storage.createPOI({
+              id: randomUUID(),
               placeId: place.place_id,
               name: place.name,
-              rating: place.rating,
+              rating: place.rating ? place.rating.toString() : undefined,
               userRatingsTotal: place.user_ratings_total,
               priceLevel: place.price_level,
               types: place.types || [],

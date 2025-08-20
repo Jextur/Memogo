@@ -62,8 +62,13 @@ export async function exportPackage(packageId: string): Promise<void> {
 }
 
 // Places API
-export async function searchPlaces(query: string): Promise<{ results: POI[] }> {
-  const response = await apiRequest("GET", `/api/places/search?query=${encodeURIComponent(query)}`);
+export async function searchPlaces(query: string, theme?: string): Promise<{ results: POI[] }> {
+  const params = new URLSearchParams({ query });
+  if (theme) params.append('theme', theme);
+  params.append('minRating', '4.2');
+  params.append('minReviews', '500');
+  
+  const response = await apiRequest("GET", `/api/places/search?${params}`);
   return await response.json();
 }
 
