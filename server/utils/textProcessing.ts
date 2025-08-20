@@ -154,12 +154,26 @@ export function fuzzyMatchDestination(input: string): {
     'nyc': 'New York, USA',
     'manhattan': 'New York, USA',
     'los angeles': 'Los Angeles, USA',
-    'la': 'Los Angeles, USA',
     'san francisco': 'San Francisco, USA',
     'sf': 'San Francisco, USA',
     'miami': 'Miami, USA',
     'vegas': 'Las Vegas, USA',
     'las vegas': 'Las Vegas, USA',
+    'chicago': 'Chicago, USA',
+    'boston': 'Boston, USA',
+    'seattle': 'Seattle, USA',
+    'dallas': 'Dallas, USA',
+    'houston': 'Houston, USA',
+    'austin': 'Austin, USA',
+    'denver': 'Denver, USA',
+    'atlanta': 'Atlanta, USA',
+    'orlando': 'Orlando, USA',
+    'phoenix': 'Phoenix, USA',
+    'portland': 'Portland, USA',
+    'washington': 'Washington DC, USA',
+    'dc': 'Washington DC, USA',
+    'philadelphia': 'Philadelphia, USA',
+    'san diego': 'San Diego, USA',
     
     // Other major cities
     'dubai': 'Dubai, UAE',
@@ -195,15 +209,8 @@ export function fuzzyMatchDestination(input: string): {
     }
   }
   
-  // Check if input contains any city keywords
-  for (const [key, value] of Object.entries(destinationMap)) {
-    if (normalized.includes(key) || key.includes(normalized)) {
-      return {
-        destination: value,
-        isCountry: false
-      };
-    }
-  }
+  // Don't do partial matching - it causes false positives like "dallas" matching "la"
+  // Only return exact or very close matches via Levenshtein distance above
   
   return {
     destination: null,

@@ -41,6 +41,9 @@ A conversational AI travel planning platform that creates personalized travel pa
   - Expanded city database to 30+ countries with 5-10 major cities each
   - Cities not in curated list (like Okinawa) are now accepted without resetting
   - Context-aware number interpretation based on conversation step
+  - Fixed critical city matching bug - "Dallas" no longer incorrectly matches to "Los Angeles"
+  - Removed problematic partial string matching that caused false positives
+  - Cities are now accepted exactly as typed when not in curated list
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

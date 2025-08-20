@@ -105,29 +105,32 @@ function fallbackConversation(context: ConversationContext): {
       
       // If we have country context and user typed something that could be a city
       if (currentCountry && userMessage.trim().length > 0) {
-        // First check if it's in our curated list for this country
-        const citiesForCountry = popularCities[currentCountry] || [];
         const userCity = userMessage.trim();
-        const cityMatch = citiesForCountry.find((city: string) => 
-          city.toLowerCase() === userCity.toLowerCase() ||
-          city.toLowerCase().includes(userCity.toLowerCase()) ||
-          userCity.toLowerCase().includes(city.toLowerCase())
+        
+        // First check for exact match in our curated list
+        const citiesForCountry = popularCities[currentCountry] || [];
+        const exactMatch = citiesForCountry.find((city: string) => 
+          city.toLowerCase() === userCity.toLowerCase()
         );
         
-        if (cityMatch) {
-          // Found in curated list
+        if (exactMatch) {
+          // Found exact match in curated list
           return {
-            response: `Perfect! ${cityMatch} is an amazing choice. How many days will you be exploring there?`,
+            response: `Perfect! ${exactMatch} is an amazing choice. How many days will you be exploring there?`,
             nextStep: "question",
-            extractedInfo: { destination: `${cityMatch}, ${currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1)}` }
+            extractedInfo: { destination: `${exactMatch}, ${currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1)}` }
           };
         } else {
-          // Not in curated list - accept it anyway (will validate via Google Places later)
-          // This handles cities like Okinawa, Hokkaido, etc.
+          // Not in curated list - accept it as-is (will validate via Google Places later)
+          // This handles cities like Dallas, Okinawa, or any other city not in our list
+          const countryName = currentCountry === 'usa' ? 'USA' : 
+                             currentCountry === 'uk' ? 'UK' :
+                             currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1);
+          
           return {
             response: `Great choice! ${userCity} sounds wonderful. How many days are you planning to stay there?`,
             nextStep: "question",
-            extractedInfo: { destination: `${userCity}, ${currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1)}` }
+            extractedInfo: { destination: `${userCity}, ${countryName}` }
           };
         }
       }
