@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import { ChatMessage } from "@shared/schema";
 import { searchPlaces } from "./googlePlaces";
-import { normalizeUserInput, fuzzyMatchDestination, suggestCorrection } from "../utils/textProcessing";
+import { normalizeUserInput, fuzzyMatchDestination, suggestCorrection, popularCities } from "../utils/textProcessing";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({
@@ -70,9 +70,9 @@ function fallbackConversation(context: ConversationContext): {
     if (detectedDestination) {
       // Check if it's a country - if so, suggest cities
       if (isCountry && suggestedCities && suggestedCities.length > 0) {
-        const cityList = suggestedCities.slice(0, 4);
+        const cityList = suggestedCities.slice(0, 5); // Show top 5 cities
         return {
-          response: `${detectedDestination} sounds wonderful! Which city are you thinking about? ${cityList.join(', ')} are all amazing, or perhaps you have another city in mind?`,
+          response: `${detectedDestination} is fantastic! Which city catches your eye? ${cityList.join(', ')} are all incredible, but feel free to type any city you prefer!`,
           nextStep: "question",
           options: cityList,
           extractedInfo: {} // Don't save destination yet, wait for city selection
@@ -87,18 +87,59 @@ function fallbackConversation(context: ConversationContext): {
       }
     } else {
       // Check if they're responding to a city suggestion from a previous country selection
-      const previousMessages = context.messages.slice(-2, -1);
-      const previousMessage = previousMessages[0]?.content || "";
-      if (previousMessage.includes("Which city")) {
-        // They might be selecting a city from previous suggestions
-        const cityMatch = fuzzyMatchDestination(userMessage);
-        if (cityMatch.destination && !cityMatch.isCountry) {
+      const previousMessages = context.messages;
+      let currentCountry = "";
+      
+      // Find the most recent country context from the conversation
+      for (let i = previousMessages.length - 1; i >= 0; i--) {
+        const msg = previousMessages[i].content.toLowerCase();
+        // Check if a country was mentioned in recent messages
+        for (const country of Object.keys(popularCities)) {
+          if (msg.includes(country)) {
+            currentCountry = country;
+            break;
+          }
+        }
+        if (currentCountry) break;
+      }
+      
+      // If we have country context and user typed something that could be a city
+      if (currentCountry && userMessage.trim().length > 0) {
+        // First check if it's in our curated list for this country
+        const citiesForCountry = popularCities[currentCountry] || [];
+        const userCity = userMessage.trim();
+        const cityMatch = citiesForCountry.find((city: string) => 
+          city.toLowerCase() === userCity.toLowerCase() ||
+          city.toLowerCase().includes(userCity.toLowerCase()) ||
+          userCity.toLowerCase().includes(city.toLowerCase())
+        );
+        
+        if (cityMatch) {
+          // Found in curated list
           return {
-            response: `Perfect! ${cityMatch.destination} it is. How many days will you be exploring there?`,
+            response: `Perfect! ${cityMatch} is an amazing choice. How many days will you be exploring there?`,
             nextStep: "question",
-            extractedInfo: { destination: cityMatch.destination }
+            extractedInfo: { destination: `${cityMatch}, ${currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1)}` }
+          };
+        } else {
+          // Not in curated list - accept it anyway (will validate via Google Places later)
+          // This handles cities like Okinawa, Hokkaido, etc.
+          return {
+            response: `Great choice! ${userCity} sounds wonderful. How many days are you planning to stay there?`,
+            nextStep: "question",
+            extractedInfo: { destination: `${userCity}, ${currentCountry.charAt(0).toUpperCase() + currentCountry.slice(1)}` }
           };
         }
+      }
+      
+      // Try standard city matching if no country context
+      const cityMatch = fuzzyMatchDestination(userMessage);
+      if (cityMatch.destination && !cityMatch.isCountry) {
+        return {
+          response: `Perfect! ${cityMatch.destination} it is. How many days will you be exploring there?`,
+          nextStep: "question",
+          extractedInfo: { destination: cityMatch.destination }
+        };
       }
       
       // Suggest correction if input seems like a typo

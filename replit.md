@@ -37,6 +37,10 @@ A conversational AI travel planning platform that creates personalized travel pa
   - Country → City flow (suggests 4-5 popular cities when country selected)
   - More conversational, less form-like dialogue
   - Graceful error recovery without freezing
+  - Fixed redundant people count confirmation - typing "3" immediately proceeds
+  - Expanded city database to 30+ countries with 5-10 major cities each
+  - Cities not in curated list (like Okinawa) are now accepted without resetting
+  - Context-aware number interpretation based on conversation step
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript
