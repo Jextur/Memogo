@@ -52,6 +52,10 @@ A conversational AI travel planning platform that creates personalized travel pa
   - Implemented city API routes for search and popular cities retrieval
   - Database stores canonical Google Place IDs for each city for future enrichment
   - Cities marked as "curated" with popularity scores for better recommendations
+  - Added Google Maps deep links to all POIs using Place IDs
+  - Implemented actionable navigation buttons with format: https://www.google.com/maps/place/?q=place_id:<PLACE_ID>
+  - Added Maps links in both itinerary view and POI search modal for preview
+  - Fallback to search query links for POIs without Place IDs
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { refinePackage, exportPackage } from "@/lib/api";
-import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils, Loader2, Sparkles, ExternalLink, Map } from "lucide-react";
 
 interface DayByDayViewProps {
   package: TravelPackage;
@@ -291,6 +291,18 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                   <div className="flex-1">
                                     <div className="flex items-center justify-between mb-1">
                                       <h5 className="font-medium text-brand-text">{activityName}</h5>
+                                      {/* Google Maps Link */}
+                                      {typeof activity === 'object' && activity.placeId && (
+                                        <a
+                                          href={`https://www.google.com/maps/place/?q=place_id:${activity.placeId}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors group"
+                                          title="View on Google Maps"
+                                        >
+                                          <Map className="w-4 h-4 text-blue-500 group-hover:text-blue-600" />
+                                        </a>
+                                      )}
                                     </div>
                                     {/* Add description for POI */}
                                     <p className="text-brand-mute text-sm mb-2">
@@ -321,6 +333,19 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                         {timeSlot === "morning" ? "~2 hours" : 
                                          timeSlot === "afternoon" ? "~3 hours" : "~2 hours"}
                                       </span>
+                                      {/* Fallback Google Maps search link if no place_id */}
+                                      {(typeof activity !== 'object' || !activity.placeId) && (
+                                        <a
+                                          href={`https://www.google.com/maps/search/${encodeURIComponent(activityName)}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center text-xs text-blue-500 hover:text-blue-600"
+                                          title="Search on Google Maps"
+                                        >
+                                          <Map className="w-3 h-3 mr-1" />
+                                          Find on Maps
+                                        </a>
+                                      )}
                                     </div>
                                   </div>
                                 </div>

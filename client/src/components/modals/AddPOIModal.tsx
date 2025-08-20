@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { searchPlaces, getPhotoUrl } from "@/lib/api";
 import { POI } from "@/types/travel";
-import { Search, Plus, Star, MapPin, Clock, Sun, Sunset, Moon, X } from "lucide-react";
+import { Search, Plus, Star, MapPin, Clock, Sun, Sunset, Moon, X, Map, ExternalLink } from "lucide-react";
 
 interface AddPOIModalProps {
   isOpen: boolean;
@@ -182,6 +182,16 @@ export function AddPOIModal({ isOpen, onClose, onAddPOI }: AddPOIModalProps) {
                             )}
                           </div>
                         )}
+                        {/* Google Maps Link */}
+                        <a
+                          href={`https://www.google.com/maps/place/?q=place_id:${poi.place_id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors group"
+                          title="View on Google Maps"
+                        >
+                          <Map className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600" />
+                        </a>
                         <Button
                           size="sm"
                           onClick={() => handleAddPOI(poi)}
