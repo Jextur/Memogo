@@ -28,6 +28,12 @@ export function useConversation(conversationId?: string) {
       sendMessage(conversationId, message),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['/api/conversation', variables.conversationId], data.conversation);
+      
+      // If backend signals auto-generation, trigger package generation
+      if (data.autoGenerate) {
+        console.log("Backend signaled auto-generation, triggering package generation");
+        generatePackagesMutation.mutate(variables.conversationId);
+      }
     },
     onError: (error, variables) => {
       console.error("Error sending message:", error);
@@ -113,5 +119,7 @@ export function useConversation(conversationId?: string) {
     // Latest AI response
     latestAIResponse: sendMessageMutation.data?.aiResponse,
     nextStep: sendMessageMutation.data?.nextStep,
+    autoGenerate: sendMessageMutation.data?.autoGenerate,
+    extractedIntent: sendMessageMutation.data?.extractedIntent,
   };
 }

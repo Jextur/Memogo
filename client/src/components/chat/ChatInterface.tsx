@@ -218,14 +218,24 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       
       <CardContent className="flex-1 p-4 overflow-y-auto space-y-4" style={{ maxHeight: "600px" }}>
         {showWelcome && (
-          <div className="flex items-start space-x-3">
-            <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
-              <Bot className="text-brand-bg w-4 h-4" />
-            </div>
-            <div className="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs">
-              <p className="text-sm text-brand-text">
-                Hi! I'm your AI travel consultant. Where would you like to go for your next adventure? 🌏
-              </p>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                <Bot className="text-brand-bg w-4 h-4" />
+              </div>
+              <div className="space-y-3">
+                <div className="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-md">
+                  <p className="text-sm text-brand-text">
+                    Hi! I'm your AI travel consultant. You can tell me about your dream trip in your own words, or I can guide you through a few questions. 🌏
+                  </p>
+                </div>
+                <div className="bg-brand-bg/30 rounded-lg px-4 py-3 max-w-md border border-brand-border/50">
+                  <p className="text-xs text-brand-mute mb-2">Try typing something like:</p>
+                  <p className="text-xs text-brand-text italic">
+                    "I want a 7-day trip to Tokyo with my girlfriend, interested in anime culture and local food"
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -311,7 +321,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
           <Input
             ref={inputRef}
             type="text"
-            placeholder="Type your message..."
+            placeholder={messages.length === 0 ? "Describe your dream trip or type a destination..." : "Type your message..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}

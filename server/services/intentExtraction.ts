@@ -62,9 +62,17 @@ Respond with valid JSON matching the required schema.`;
 
       const extracted = JSON.parse(response.choices[0].message.content || '{}');
       return ExtractedIntentSchema.parse(extracted);
-    } catch (error) {
-      console.error('Intent extraction failed:', error);
-      // Return empty intent on failure
+    } catch (error: any) {
+      // Handle API quota errors gracefully
+      if (error?.status === 429 || error?.code === 'insufficient_quota') {
+        console.log('OpenAI API quota exceeded - falling back to guided conversation');
+      } else if (error?.status === 401) {
+        console.log('OpenAI API key is invalid or missing - falling back to guided conversation');
+      } else {
+        console.error('Intent extraction failed:', error?.message || error);
+      }
+      
+      // Return empty intent on failure - will fall back to guided conversation
       return {
         destination_city: null,
         destination_country: null,

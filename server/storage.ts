@@ -909,11 +909,44 @@ export class MemStorage implements IStorage {
   }
 
   // City operations
-  async getCityByName(cityName: string, countryCode: string): Promise<City | undefined> {
-    return Array.from(this.cities.values()).find(
-      city => city.cityName.toLowerCase() === cityName.toLowerCase() && 
-              city.countryCode === countryCode
+  async getCityByName(cityName: string, countryName?: string): Promise<City | undefined> {
+    const cities = Array.from(this.cities.values());
+    
+    // First try to match with country name if provided
+    if (countryName) {
+      const withCountry = cities.find(
+        city => city.cityName.toLowerCase() === cityName.toLowerCase() && 
+                city.countryName.toLowerCase() === countryName.toLowerCase()
+      );
+      if (withCountry) return withCountry;
+    }
+    
+    // Fall back to just city name match
+    return cities.find(
+      city => city.cityName.toLowerCase() === cityName.toLowerCase()
     );
+  }
+
+  async searchCities(query: string): Promise<City[]> {
+    const cities = Array.from(this.cities.values());
+    const lowerQuery = query.toLowerCase();
+    
+    // First try exact match
+    const exactMatches = cities.filter(c => 
+      c.cityName.toLowerCase() === lowerQuery
+    );
+    if (exactMatches.length > 0) return exactMatches;
+    
+    // Then try partial match
+    const partialMatches = cities.filter(c => 
+      c.cityName.toLowerCase().includes(lowerQuery) ||
+      c.countryName.toLowerCase().includes(lowerQuery)
+    );
+    
+    // Sort by popularity
+    partialMatches.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    
+    return partialMatches.slice(0, 5); // Return top 5 matches
   }
 
   // City tag operations
@@ -921,6 +954,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.cityTags.values())
       .filter(tag => tag.cityId === cityId && tag.isActive)
       .sort((a, b) => Number(b.score) - Number(a.score));
+  }
+
+  async getTagAliases(): Promise<TagAlias[]> {
+    return Array.from(this.tagAliases.values());
   }
 
   async getCityTag(id: number): Promise<CityTag | undefined> {
