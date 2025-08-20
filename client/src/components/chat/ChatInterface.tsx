@@ -63,6 +63,9 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
   // Handle package generation trigger with delay to ensure conversation data is saved
   useEffect(() => {
+    // Don't auto-generate if we're waiting for tag selection
+    if (showTagSelector) return;
+    
     if (nextStep === "generate" && !isGeneratingPackages && currentConversationId) {
       // Prevent duplicate generation for the same conversation
       if (packageGenerationTriggeredRef.current === currentConversationId) {
@@ -77,7 +80,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         generateTravelPackages();
       }, 500); // 500ms delay to allow conversation update to complete
     }
-  }, [nextStep, isGeneratingPackages, currentConversationId]);
+  }, [nextStep, isGeneratingPackages, currentConversationId, showTagSelector]);
 
   // Detect when to show tag selector (after city is selected, before themes)
   useEffect(() => {
@@ -86,10 +89,11 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     const lastMessage = conversation.messages[conversation.messages.length - 1];
     const lastUserMessage = [...conversation.messages].reverse().find(m => m.role === "user");
     
-    // Check if we're at the theme selection step
+    // Check if we're at the preferences selection step
     if (lastMessage?.role === "assistant" && 
-        lastMessage.content?.toLowerCase().includes("what are you most interested in") &&
-        lastMessage.options?.some(opt => opt.includes("Must-see highlights"))) {
+        (lastMessage.content?.toLowerCase().includes("must-visit places") ||
+         lastMessage.content?.toLowerCase().includes("experiences you") ||
+         nextStep === "preferences")) {
       
       // Extract city info from conversation
       const cityMessages = conversation.messages.filter(m => m.role === "user");

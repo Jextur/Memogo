@@ -233,9 +233,9 @@ function fallbackConversation(context: ConversationContext): {
       
       // Directly proceed to theme selection - no redundant confirmation
       return {
-        response: `${peopleResponse} Now, what kind of trip vibe are you going for?`,
-        nextStep: "question",
-        options: ["Must-see highlights", "Local food & culture", "Hidden gems", "Mix of everything"],
+        response: `${peopleResponse} For your trip to ${context.destination}, are there any must-visit places or experiences you definitely want to include?`,
+        nextStep: "preferences",
+        options: [], // Let frontend show city-specific tags
         extractedInfo: { people: detectedPeople }
       };
     } 
@@ -252,9 +252,9 @@ function fallbackConversation(context: ConversationContext): {
     if (lowerNormalized.includes("just me") || lowerNormalized.includes("only me") ||
         lowerNormalized.includes("by myself") || lowerNormalized.includes("on my own")) {
       return {
-        response: "Solo adventure it is! I love the freedom of traveling alone. What kind of experiences are you most excited about?",
-        nextStep: "question",
-        options: ["Must-see highlights", "Local food scene", "Off the beaten path", "A bit of everything"],
+        response: `Solo adventure it is! I love the freedom of traveling alone. For ${context.destination}, are there any must-visit places or experiences on your list?`,
+        nextStep: "preferences",
+        options: [], // Let frontend show city-specific tags
         extractedInfo: { people: 1 }
       };
     }
@@ -271,9 +271,9 @@ function fallbackConversation(context: ConversationContext): {
           `A group of ${parsedPeople} - that'll be fun!`;
         
         return {
-          response: `${peopleResponse} What kind of experiences are you looking for?`,
-          nextStep: "question",
-          options: ["Must-see highlights", "Local food & culture", "Hidden gems", "Mix of everything"],
+          response: `${peopleResponse} For your trip to ${context.destination}, are there any must-visit places or experiences you definitely want to include?`,
+          nextStep: "preferences",
+          options: [], // Let frontend show city-specific tags
           extractedInfo: { people: parsedPeople }
         };
       }
@@ -285,9 +285,9 @@ function fallbackConversation(context: ConversationContext): {
       if (lowerNormalized.includes("solo") || lowerNormalized.includes("alone") || 
           lowerNormalized.includes("myself")) {
         return {
-          response: "Solo adventure it is! I love the freedom of traveling alone. What kind of experiences are you most excited about?",
-          nextStep: "question",
-          options: ["Must-see highlights", "Local food scene", "Off the beaten path", "A bit of everything"],
+          response: `Solo adventure it is! I love the freedom of traveling alone. For ${context.destination}, are there any must-visit places or experiences on your list?`,
+          nextStep: "preferences",
+          options: [], // Let frontend show city-specific tags
           extractedInfo: { people: 1 }
         };
       } else if (lowerNormalized.includes("couple") || lowerNormalized.includes("partner") ||
@@ -295,9 +295,9 @@ function fallbackConversation(context: ConversationContext): {
                  lowerNormalized.includes("husband") || lowerNormalized.includes("wife") ||
                  lowerNormalized.includes("two of us") || lowerNormalized.includes("both of us")) {
         return {
-          response: "How romantic! Traveling as a couple is always special. What kind of experiences would you both enjoy?",
-          nextStep: "question",
-          options: ["Classic romance", "Adventure together", "Foodie experiences", "Cultural immersion"],
+          response: `How romantic! Traveling as a couple is always special. For ${context.destination}, are there any must-visit places or experiences you both want to include?`,
+          nextStep: "preferences",
+          options: [], // Let frontend show city-specific tags
           extractedInfo: { people: 2 }
         };
       } else if (lowerNormalized.includes("family")) {
@@ -330,7 +330,31 @@ function fallbackConversation(context: ConversationContext): {
     let theme = "classic";
     const lowerMessage = normalized.toLowerCase();
     
-    // Map various natural expressions to themes
+    // Check if this is from TagSelector (format: "I'm interested in: tag1, tag2, tag3")
+    if (lowerMessage.includes("i'm interested in:") || lowerMessage.includes("i am interested in:")) {
+      // Extract the tags part after the colon
+      const tagsPart = userMessage.split(':')[1]?.trim() || "";
+      
+      // Store the specific tags/interests for later use
+      theme = tagsPart || "custom";
+      
+      // If we got specific tags, use them as the theme
+      if (tagsPart) {
+        // Create a personalized response based on the selected interests
+        const interests = tagsPart.split(',').map(t => t.trim());
+        const interestList = interests.length > 2 
+          ? interests.slice(0, -1).join(', ') + ', and ' + interests[interests.length - 1]
+          : interests.join(' and ');
+          
+        return {
+          response: `Fantastic choices! I'll create packages focusing on ${interestList}. Let me find the best experiences in ${context.destination} that match your interests...`,
+          nextStep: "generate",
+          extractedInfo: { theme }
+        };
+      }
+    }
+    
+    // Fallback to generic theme mapping for non-tag-based inputs
     if (lowerMessage.includes("food") || lowerMessage.includes("eat") || 
         lowerMessage.includes("culinary") || lowerMessage.includes("restaurant") ||
         lowerMessage.includes("foodie") || lowerMessage.includes("cuisine") ||
