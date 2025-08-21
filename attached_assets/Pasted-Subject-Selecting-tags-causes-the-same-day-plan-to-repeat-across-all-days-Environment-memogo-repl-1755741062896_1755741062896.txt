@@ -1,0 +1,38 @@
+Subject: Selecting tags causes the same day plan to repeat across all days
+
+Environment: memogo.replit.app (mobile Safari). Seen today.
+
+Steps to Reproduce
+	1.	Start a trip (e.g., Tokyo, 3–7 days).
+	2.	When asked for interests, select a few city tags (e.g., Tokyo Tower, Sensō-ji, Tokyo Skytree).
+	3.	Generate packages and open any package’s detailed itinerary.
+
+Actual Result
+	•	Every day shows the exact same POIs in the same order and time buckets (e.g., Morning: Tokyo Tower, Afternoon: Sensō-ji, Evening: Skytree).
+	•	This duplication only happens when tags are selected. Without tags, days look more varied.
+
+Expected Result
+	•	Tags should be distributed across the trip (each tag at least once), with the remaining slots filled by diverse, high-quality city highlights.
+	•	No duplicate POIs across different days of the same itinerary.
+
+Impact
+	•	Trips feel copy-pasted and low quality, worse than a plain Google Places pull. Users get three identical days.
+
+Hypotheses to Check
+	•	The generator is reusing the same candidate list for each day (e.g., slicing from index 0 every time) or copying a single “day template.”
+	•	Missing trip-level de-duplication by place_id (no global set to prevent repeats across days).
+	•	Tag path might bypass the discovery/fill step, so only the tag-matched POIs are used and re-applied per day.
+	•	A cache/memoization layer is returning the same day plan for each day.
+	•	Day loop not using the day index/seed (no offset/shuffle per day).
+
+What to Log
+	•	For the selected tags: log the final POI list per day with place_id, source (tag vs discovery), and the day index.
+	•	Confirm whether the candidate pool is rebuilt per day or reused.
+	•	Log whether any dedupe (by place_id) runs at the trip level vs per-day only.
+
+Minimal Acceptance Criteria
+	•	Within a single itinerary, no repeated place_id across different days.
+	•	Each selected tag appears at least once; remaining slots are filled with varied, popular POIs.
+	•	Time buckets can repeat labels (morning/afternoon/evening), but POIs must vary by day.
+
+(Reference screenshots show Day 1/2/3 all using Tokyo Tower → Sensō-ji → Skytree in identical order.)

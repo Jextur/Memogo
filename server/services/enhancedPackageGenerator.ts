@@ -168,43 +168,88 @@ function buildDayItinerary(
   tagPOIs: POIWithReason[],
   generalPOIs: POIWithReason[],
   restaurants: POIWithReason[],
-  selectedTags: string[]
+  selectedTags: string[],
+  globalUsedPlaceIds: Set<string>  // Track POIs used across all days
 ): DayItinerary {
   const poisForDay: POIWithReason[] = [];
-  const usedPlaceIds = new Set<string>();
   
-  // Add 1-2 tag-related POIs for this day
-  const tagPOIsForDay = tagPOIs.slice((dayNum - 1) * 2, dayNum * 2);
-  tagPOIsForDay.forEach(poi => {
-    if (!usedPlaceIds.has(poi.placeId)) {
+  // Distribute tag POIs across days to ensure each tag appears at least once
+  // but don't repeat POIs that have been used on previous days
+  const tagPOIsPerDay = Math.max(1, Math.ceil(tagPOIs.length / 3)); // Distribute evenly across days
+  const startIdx = (dayNum - 1) * tagPOIsPerDay;
+  const endIdx = Math.min(startIdx + tagPOIsPerDay, tagPOIs.length);
+  
+  // Add tag-related POIs for this day (1-2 per day)
+  for (let i = startIdx; i < endIdx && poisForDay.length < 2; i++) {
+    const poi = tagPOIs[i];
+    if (poi && !globalUsedPlaceIds.has(poi.placeId)) {
       poisForDay.push(poi);
-      usedPlaceIds.add(poi.placeId);
+      globalUsedPlaceIds.add(poi.placeId);
     }
-  });
+  }
+  
+  // If we couldn't add tag POIs for this day (all used), try remaining tag POIs
+  if (poisForDay.length === 0 && tagPOIs.length > 0) {
+    for (const poi of tagPOIs) {
+      if (!globalUsedPlaceIds.has(poi.placeId)) {
+        poisForDay.push(poi);
+        globalUsedPlaceIds.add(poi.placeId);
+        if (poisForDay.length >= 2) break;
+      }
+    }
+  }
   
   // Add general attractions to fill the day (aim for 4-5 activities)
   const remainingSlots = 5 - poisForDay.length;
   let addedGeneral = 0;
   
-  for (const poi of generalPOIs) {
+  // Start from different indices for each day to ensure variety
+  const generalStartIdx = (dayNum - 1) * 3;
+  const rotatedGeneralPOIs = [
+    ...generalPOIs.slice(generalStartIdx),
+    ...generalPOIs.slice(0, generalStartIdx)
+  ];
+  
+  for (const poi of rotatedGeneralPOIs) {
     if (addedGeneral >= remainingSlots) break;
-    if (!usedPlaceIds.has(poi.placeId)) {
+    if (!globalUsedPlaceIds.has(poi.placeId)) {
       poisForDay.push(poi);
-      usedPlaceIds.add(poi.placeId);
+      globalUsedPlaceIds.add(poi.placeId);
       addedGeneral++;
     }
   }
   
-  // Add at least one restaurant
-  const restaurant = restaurants[dayNum % restaurants.length];
-  if (restaurant && !usedPlaceIds.has(restaurant.placeId)) {
+  // Add at least one restaurant (different for each day)
+  const restaurantIdx = (dayNum - 1) % restaurants.length;
+  const restaurant = restaurants[restaurantIdx];
+  if (restaurant && !globalUsedPlaceIds.has(restaurant.placeId)) {
     poisForDay.push(restaurant);
+    globalUsedPlaceIds.add(restaurant.placeId);
+  } else {
+    // Try to find any unused restaurant
+    for (const r of restaurants) {
+      if (!globalUsedPlaceIds.has(r.placeId)) {
+        poisForDay.push(r);
+        globalUsedPlaceIds.add(r.placeId);
+        break;
+      }
+    }
   }
   
-  // Generate title based on what's included
-  const tagsCovered = tagPOIsForDay.length > 0 
-    ? `featuring ${tagPOIsForDay.map(p => p.reason.split('"')[1]).filter(Boolean).join(' & ')}`
+  // Generate title based on what's included in this specific day
+  const tagPOIsInDay = poisForDay.filter(poi => 
+    poi.reason.includes('Selected for')
+  );
+  const tagsCovered = tagPOIsInDay.length > 0 
+    ? `featuring ${tagPOIsInDay.map(p => p.reason.split('"')[1]).filter(Boolean).join(' & ')}`
     : 'exploring top attractions';
+  
+  // Log for debugging
+  console.log(`Day ${dayNum} POIs:`, poisForDay.map(p => ({ 
+    name: p.name, 
+    placeId: p.placeId,
+    source: p.reason.includes('Selected for') ? 'tag' : 'discovery'
+  })));
   
   return {
     day: dayNum,
@@ -252,6 +297,8 @@ export async function generateEnhancedTravelPackages(
   
   // Build itinerary for each day
   const itinerary: DayItinerary[] = [];
+  const globalUsedPlaceIds = new Set<string>(); // Track used POIs across all days
+  
   for (let day = 1; day <= request.days; day++) {
     itinerary.push(buildDayItinerary(
       day,
@@ -259,7 +306,8 @@ export async function generateEnhancedTravelPackages(
       allTagPOIs,
       topAttractions,
       restaurants,
-      selectedTags
+      selectedTags,
+      globalUsedPlaceIds  // Pass the global tracking set
     ));
   }
   
@@ -333,6 +381,7 @@ export async function generateEnhancedTravelPackages(
   console.log(`Tag coverage: ${tagsCovered.size}/${selectedTags.length} tags represented`);
   console.log(`Total unique POIs: ${allTagPOIs.length + topAttractions.length}`);
   console.log(`POIs with Place IDs: ${[...allTagPOIs, ...topAttractions].filter(p => p.placeId).length}`);
+  console.log(`Global dedupe: ${globalUsedPlaceIds.size} unique POIs used across all days`);
   
   return packages;
 }
