@@ -68,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { message } = req.body;
       
-      const conversation = await storage.getConversation(id);
+      let conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }
@@ -93,11 +93,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Update conversation with extracted fields
           if (extractedIntent.destination_city || extractedIntent.duration_days || extractedIntent.people_count) {
-            await storage.updateConversation(id, {
+            conversation = await storage.updateConversation(id, {
               destination: extractedIntent.destination_city || conversation.destination,
               days: extractedIntent.duration_days || conversation.days,
               people: extractedIntent.people_count || conversation.people,
-              theme: extractedIntent.tags.join(', ') || conversation.theme
+              theme: extractedIntent.tags && extractedIntent.tags.length > 0 ? extractedIntent.tags.join(', ') : conversation.theme
             });
           }
           
@@ -153,6 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Get AI response for normal conversation flow
+        // IMPORTANT: Use the updated conversation (which may have extracted fields)
         const context = {
           destination: conversation.destination || undefined,
           days: conversation.days || undefined,

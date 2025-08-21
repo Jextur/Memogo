@@ -84,42 +84,23 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
   // Detect when to show tag selector (after city is selected, before themes)
   useEffect(() => {
-    if (!conversation) return;
+    if (!conversation || showTagSelector) return;
     
     const lastMessage = conversation.messages[conversation.messages.length - 1];
-    const lastUserMessage = [...conversation.messages].reverse().find(m => m.role === "user");
     
     // Check if we're at the preferences selection step
-    if (lastMessage?.role === "assistant" && 
-        (lastMessage.content?.toLowerCase().includes("must-visit places") ||
-         lastMessage.content?.toLowerCase().includes("experiences you") ||
-         nextStep === "preferences")) {
+    // This happens when we have destination, days, people but not theme
+    const isPreferencesStep = nextStep === "preferences" || 
+      (lastMessage?.role === "assistant" && 
+       (lastMessage.content?.toLowerCase().includes("must-visit places") ||
+        lastMessage.content?.toLowerCase().includes("experiences you")));
+    
+    // Check if we have all required fields to show tag selector
+    if (isPreferencesStep && conversation.destination && conversation.days && conversation.people && !conversation.theme) {
+      // Parse city from destination (format: "City, Country" or just "City")
+      const cityName = conversation.destination.split(',')[0].trim();
       
-      // Extract city info from conversation
-      const cityMessages = conversation.messages.filter(m => m.role === "user");
-      let cityName = "";
-      let countryCode = "";
-      
-      // Look for city name in user messages
-      for (const msg of cityMessages) {
-        // Common city patterns
-        const cityPatterns = [
-          /^(tokyo|kyoto|osaka|paris|london|new york|barcelona|rome|bangkok|sydney|dubai|singapore)/i,
-          /going to ([a-z\s]+)/i,
-          /visit ([a-z\s]+)/i,
-        ];
-        
-        for (const pattern of cityPatterns) {
-          const match = msg.content.match(pattern);
-          if (match) {
-            cityName = match[1] || match[0];
-            break;
-          }
-        }
-        if (cityName) break;
-      }
-      
-      // Map city to country code (simplified - you might want to enhance this)
+      // Map city to country code
       const cityCountryMap: Record<string, string> = {
         'tokyo': 'JP', 'kyoto': 'JP', 'osaka': 'JP', 'okinawa': 'JP',
         'new york': 'US', 'los angeles': 'US', 'san francisco': 'US', 'miami': 'US',
@@ -134,9 +115,10 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       };
       
       const normalizedCity = cityName.toLowerCase().trim();
-      countryCode = cityCountryMap[normalizedCity] || 'US';
+      const countryCode = cityCountryMap[normalizedCity] || 'US';
       
       if (cityName) {
+        console.log("Showing tag selector for city:", cityName, "with country code:", countryCode);
         setSelectedCity({ 
           name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), 
           countryCode 
@@ -144,7 +126,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         setShowTagSelector(true);
       }
     }
-  }, [conversation]);
+  }, [conversation, nextStep, showTagSelector]);
 
   // Notify parent when packages are ready
   useEffect(() => {
