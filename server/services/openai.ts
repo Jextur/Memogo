@@ -89,6 +89,16 @@ function fallbackConversation(context: ConversationContext): {
       // Check if they're responding to a city suggestion from a previous country selection
       const previousMessages = context.messages;
       let currentCountry = "";
+      let isStuckInLoop = false;
+      
+      // Check if we're stuck in a loop (same message repeated)
+      if (previousMessages.length >= 2) {
+        const lastTwoResponses = previousMessages.slice(-2).filter(m => m.role === 'assistant');
+        if (lastTwoResponses.length >= 2 && 
+            lastTwoResponses[0].content === lastTwoResponses[1].content) {
+          isStuckInLoop = true;
+        }
+      }
       
       // Find the most recent country context from the conversation
       for (let i = previousMessages.length - 1; i >= 0; i--) {
@@ -101,6 +111,17 @@ function fallbackConversation(context: ConversationContext): {
           }
         }
         if (currentCountry) break;
+      }
+      
+      // If we're stuck in a loop, try to accept the input as-is
+      if (isStuckInLoop && userMessage.trim().length >= 3) {
+        const cityName = userMessage.trim();
+        const properCase = cityName.charAt(0).toUpperCase() + cityName.slice(1).toLowerCase();
+        return {
+          response: `Got it! Let's explore ${properCase}. How many days will you be there?`,
+          nextStep: "question",
+          extractedInfo: { destination: properCase }
+        };
       }
       
       // If we have country context and user typed something that could be a city

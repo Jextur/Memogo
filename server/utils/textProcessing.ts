@@ -236,18 +236,56 @@ export function fuzzyMatchDestination(input: string): {
     };
   }
   
+  // Special handling for Singapore variations (sigaore, singpore, etc.)
+  if (normalized.includes('sing') || normalized.includes('sigap') || 
+      normalized.includes('sgp') || normalized === 'sg' ||
+      levenshteinDistance(normalized, 'singapore') <= 4) {
+    return {
+      destination: 'Singapore',
+      isCountry: false
+    };
+  }
+  
   // Fuzzy matching using Levenshtein distance for cities
+  let bestMatch = null;
+  let bestScore = Infinity;
+  
   for (const [key, value] of Object.entries(destinationMap)) {
-    if (levenshteinDistance(normalized, key) <= 2) {
-      return {
-        destination: value,
-        isCountry: false
-      };
+    const distance = levenshteinDistance(normalized, key);
+    // More lenient for longer city names
+    const threshold = key.length <= 5 ? 2 : Math.floor(key.length * 0.35);
+    
+    if (distance <= threshold && distance < bestScore) {
+      bestScore = distance;
+      bestMatch = value;
     }
   }
   
-  // Don't do partial matching - it causes false positives like "dallas" matching "la"
-  // Only return exact or very close matches via Levenshtein distance above
+  if (bestMatch) {
+    return {
+      destination: bestMatch,
+      isCountry: false
+    };
+  }
+  
+  // Check all cities in popular cities list with fuzzy matching
+  for (const [country, cities] of Object.entries(popularCities)) {
+    for (const city of cities) {
+      const cityNormalized = city.toLowerCase();
+      const distance = levenshteinDistance(normalized, cityNormalized);
+      const threshold = city.length <= 5 ? 2 : Math.floor(city.length * 0.35);
+      
+      if (distance <= threshold) {
+        const countryDisplay = country === 'usa' ? 'USA' : 
+                              country === 'uae' ? 'UAE' :
+                              country.charAt(0).toUpperCase() + country.slice(1);
+        return {
+          destination: `${city}, ${countryDisplay}`,
+          isCountry: false
+        };
+      }
+    }
+  }
   
   return {
     destination: null,
