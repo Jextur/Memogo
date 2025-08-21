@@ -48,13 +48,13 @@ export function StarRating({
       
       {/* Score and review count */}
       {showScore && (
-        <div className="flex items-center gap-2 ml-1">
-          <span className={`font-medium text-gray-900 ${textSize}`}>
-            {rating.toFixed(1)} / {maxRating}
+        <div className="flex items-center gap-1 ml-1">
+          <span className={`font-medium text-gray-700 ${textSize}`}>
+            {rating.toFixed(1)}/5
           </span>
           {reviewCount !== undefined && (
-            <span className={`text-gray-500 ${textSize}`} style={{ color: '#B9C1D0' }}>
-              ({reviewCount.toLocaleString()} reviews)
+            <span className={`${textSize}`} style={{ color: '#9CA3AF' }}>
+              ({reviewCount >= 1000 ? `${(reviewCount / 1000).toFixed(1)}k` : reviewCount} reviews)
             </span>
           )}
         </div>

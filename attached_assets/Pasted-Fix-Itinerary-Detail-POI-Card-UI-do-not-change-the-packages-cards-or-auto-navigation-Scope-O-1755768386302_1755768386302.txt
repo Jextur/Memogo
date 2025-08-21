@@ -1,0 +1,50 @@
+Fix Itinerary Detail POI Card UI (do not change the /packages cards or auto-navigation).
+
+Scope
+	•	Only touch the itinerary detail view components. If different in codebase, it’s usually:
+	•	client/src/components/itinerary/ItineraryDayCard.tsx
+	•	client/src/components/itinerary/POICard.tsx (create if missing)
+	•	Do not modify /packages page or its minimal layout.
+
+Data mapping
+	•	rating (float 0–5), user_ratings_total (int), types (Google Places), durationMinutes (our estimate), tags (derived from types/LLM), mapsUrl.
+	•	Format review count with thousands separators (e.g., 87,649). If rating or user_ratings_total is missing or <10, hide the rating block.
+
+Visual spec for each POI card (replace the current long text like “Selected for … rated …”)
+	1.	Title row: POI name only (no “Selected for …” text).
+	2.	Meta row (left → right):
+	•	StarRating component with half-star support + numeric score 4.6/5.
+	•	Light, small text for reviews: (87,649 reviews).
+	•	Right-aligned “Find on Maps” link with a map-pin / external-link icon; open mapsUrl in new tab.
+	3.	Chips row:
+	•	Category chip (e.g., Attraction, Food, Culture), Duration chip (e.g., ~3 hours) — rounded pills.
+	4.	Optional tags row: Up to 3 extra chips (e.g., iconic, family-friendly, budget).
+	5.	Description: Truncate to 120 chars with ellipsis.
+	6.	Keep card spacing tight; use existing design tokens. Chips use subtle backgrounds; review text muted.
+
+StarRating component
+	•	New file client/src/components/common/StarRating.tsx.
+	•	Props: { value: number; size?: 'sm'|'md'; }
+	•	Render 5 icons with 0.5 increments; aria-label like aria-label="Rated 4.5 out of 5".
+	•	Use existing icon set; if not available, use fallback SVGs.
+
+Day headers
+	•	Header format = Day N — City, Country and a right-side dot bullet • {activitiesCount} activities.
+	•	Remove “featuring Tokyo Tower …” duplication from headers.
+
+Empty/edge states
+	•	If rating missing or user_ratings_total < 10: hide rating + reviews block but show chips and Maps link.
+
+QA / Acceptance
+	•	Generate a 6-day Tokyo itinerary.
+	•	On any POI card you must see: star icons + 4.x/5 + (xx,xxx reviews) + category & duration chips + up to 3 tags + right-aligned “Find on Maps”.
+	•	No long “Selected for … rated …” sentences remain.
+	•	/packages page stays minimal; auto-navigation unchanged.
+	•	Add simple skeleton loaders for POI cards to avoid jank.
+
+Do not
+	•	Do not re-introduce package previews into chat page.
+	•	Do not touch the 3-card package layout or hero gradients.
+
+Important:
+I will also attach reference screenshots of the itinerary detail page from a previous version we had. Please use them as a reference to restore the original UI functionality and design elements (ratings, review counts, POI tags, category chips, duration badges, etc.). The final style can be adjusted later, but make sure the UI features and functions come back first.

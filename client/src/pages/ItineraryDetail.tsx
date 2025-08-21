@@ -16,7 +16,9 @@ import {
   Camera,
   Hotel,
   Map,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -196,125 +198,126 @@ export function ItineraryDetail() {
               </div>
               
               <div className="p-6">
-                <div className="space-y-4">
-                  {day.pois?.map((poi: any, poiIndex: number) => {
-                    // Truncate description to 120 chars
-                    const truncatedDescription = poi.description && poi.description.length > 120 
-                      ? poi.description.substring(0, 117) + '...' 
-                      : poi.description;
-                    
-                    // Format duration
-                    const formattedDuration = poi.durationHours 
-                      ? `~${poi.durationHours} hour${poi.durationHours > 1 ? 's' : ''}`
-                      : poi.duration;
-                    
-                    return (
-                      <div key={poiIndex} className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            {getActivityIcon(poi.category || poi.type || '')}
-                          </div>
-                        </div>
-                        
-                        <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-1">{poi.name}</h4>
-                              
-                              {/* Star rating with review count */}
-                              {poi.rating && (
-                                <StarRating 
-                                  rating={poi.rating} 
-                                  reviewCount={poi.reviewCount || poi.reviewsCount}
-                                  size="sm"
-                                />
-                              )}
-                            </div>
-                            
-                            {/* Price level */}
-                            {poi.priceLevel && (
-                              <span className="text-sm text-gray-600 ml-4">
-                                {'$'.repeat(poi.priceLevel)}
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Category and duration chips */}
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            {poi.category && (
-                              <Badge 
-                                variant="secondary" 
-                                className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(poi.category)}`}
-                              >
-                                {poi.category.charAt(0).toUpperCase() + poi.category.slice(1)}
-                              </Badge>
-                            )}
-                            {formattedDuration && (
-                              <Badge 
-                                variant="outline"
-                                className="text-xs px-2 py-0.5 rounded-full text-gray-600 border-gray-300"
-                              >
-                                <Clock className="w-3 h-3 mr-1" />
-                                {formattedDuration}
-                              </Badge>
-                            )}
-                            {poi.timeLabel && (
-                              <Badge 
-                                variant="outline"
-                                className="text-xs px-2 py-0.5 rounded-full text-gray-600 border-gray-300"
-                              >
-                                {poi.timeLabel}
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          {/* Description */}
-                          {truncatedDescription && (
-                            <p className="text-sm text-gray-600 mb-2">{truncatedDescription}</p>
-                          )}
-                          
-                          {/* Tags */}
-                          {poi.tags && poi.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-2">
-                              {poi.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
-                                <Badge 
-                                  key={tagIndex}
-                                  variant="outline" 
-                                  className="text-xs px-2 py-0 text-gray-500 border-gray-200 bg-gray-50"
-                                >
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Find on Maps link */}
-                          <div className="flex justify-end">
-                            {(poi.placeId || poi.mapsUrl) && (
-                              <a
-                                href={poi.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${poi.placeId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                              >
-                                <ExternalLink className="w-3 h-3 mr-1" />
-                                Find on Maps
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Group POIs by time label */}
+                {['Morning', 'Afternoon', 'Evening'].map((timeLabel) => {
+                  const timePois = day.pois?.filter((poi: any) => 
+                    poi.timeLabel === timeLabel || 
+                    (poi.time && poi.time.toLowerCase().includes(timeLabel.toLowerCase()))
+                  ) || [];
                   
-                  {/* Fallback to activities if POIs not available */}
-                  {!day.pois && day.activities?.map((activity: string, actIndex: number) => (
-                    <div key={actIndex} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                      <span className="text-gray-700">{activity}</span>
+                  if (timePois.length === 0) return null;
+                  
+                  return (
+                    <div key={timeLabel} className="mb-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                          {timeLabel === 'Morning' && <Sun className="w-4 h-4 text-white" />}
+                          {timeLabel === 'Afternoon' && <Sun className="w-4 h-4 text-white" />}
+                          {timeLabel === 'Evening' && <Moon className="w-4 h-4 text-white" />}
+                        </div>
+                        <span className="text-sm font-semibold text-purple-600">
+                          {timeLabel} {timePois[0]?.time && `(${timePois[0].time})`}
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3 ml-10">
+                        {timePois.map((poi: any, poiIndex: number) => {
+                          // Truncate description to 120 chars
+                          const truncatedDescription = poi.description && poi.description.length > 120 
+                            ? poi.description.substring(0, 117) + '...' 
+                            : poi.description || 'Must-visit attraction showcasing local highlights';
+                          
+                          // Format duration
+                          const formattedDuration = poi.durationHours 
+                            ? `~${poi.durationHours} hour${poi.durationHours > 1 ? 's' : ''}`
+                            : poi.duration || '~2 hours';
+                          
+                          // Format review count with thousands separator
+                          const formattedReviews = poi.reviewCount || poi.reviewsCount || poi.user_ratings_total;
+                          
+                          return (
+                            <div key={poiIndex} className="bg-white border border-purple-100 rounded-xl p-4 hover:shadow-md transition-shadow">
+                              <div className="flex gap-4">
+                                <div className="flex-shrink-0">
+                                  <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                                    <MapPin className="w-6 h-6 text-purple-500" />
+                                  </div>
+                                </div>
+                                
+                                <div className="flex-1">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-900 text-lg mb-1">{poi.name}</h4>
+                                      
+                                      {/* Star rating with review count */}
+                                      {poi.rating && formattedReviews && formattedReviews >= 10 && (
+                                        <StarRating 
+                                          rating={poi.rating} 
+                                          reviewCount={formattedReviews}
+                                          size="sm"
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Category and duration chips */}
+                                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                                    <Badge 
+                                      className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 border-0"
+                                    >
+                                      {poi.category?.charAt(0).toUpperCase() + poi.category?.slice(1) || 'Attraction'}
+                                    </Badge>
+                                    <Badge 
+                                      className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 border-0"
+                                    >
+                                      {formattedDuration}
+                                    </Badge>
+                                  </div>
+                                  
+                                  {/* Description */}
+                                  <p className="text-sm text-gray-500 mb-3">{truncatedDescription}</p>
+                                  
+                                  {/* Find on Maps link */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex flex-wrap gap-1">
+                                      {poi.tags && poi.tags.length > 0 && poi.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
+                                        <span 
+                                          key={tagIndex}
+                                          className="text-xs px-2 py-0.5 text-gray-500 bg-gray-50 rounded"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    {(poi.placeId || poi.mapsUrl) && (
+                                      <a
+                                        href={poi.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${poi.placeId}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center text-xs text-purple-600 hover:text-purple-800 transition-colors font-medium"
+                                      >
+                                        <MapPin className="w-3 h-3 mr-1" />
+                                        Find on Maps
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+                  
+                {/* Fallback to activities if POIs not available */}
+                {!day.pois && day.activities?.map((activity: string, actIndex: number) => (
+                  <div key={actIndex} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                    <span className="text-gray-700">{activity}</span>
+                  </div>
+                ))}
               </div>
             </Card>
           ))}
