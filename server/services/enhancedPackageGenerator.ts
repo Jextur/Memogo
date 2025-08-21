@@ -644,13 +644,7 @@ export async function generateEnhancedTravelPackages(
       diningCount: allDiningOptions.length,
       attractionCount: allTagPOIs.length + allGeneralAttractions.length,
       highlights: [...allTagPOIs.slice(0, 3), ...allGeneralAttractions.slice(0, 2)].map(p => p.name),
-      itinerary: itinerary.map(day => ({
-        day: day.day,
-        location: day.location,
-        title: day.title,
-        description: day.description,
-        activities: day.activities
-      }))
+      itinerary: itinerary
     },
     {
       name: `Foodie ${request.destination} Experience`,
@@ -664,7 +658,8 @@ export async function generateEnhancedTravelPackages(
       highlights: [...allDiningOptions.slice(0, 3), ...allTagPOIs.slice(0, 2)].map(p => p.name),
       itinerary: itinerary.map(day => ({
         ...day,
-        activities: day.activities.slice(0, 4) // Slightly fewer activities
+        activities: day.activities.slice(0, 4), // Slightly fewer activities
+        pois: day.pois ? day.pois.slice(0, 4) : undefined // Also limit POIs
       }))
     },
     {
@@ -679,7 +674,8 @@ export async function generateEnhancedTravelPackages(
       highlights: [...allTagPOIs.slice(0, 2), ...allGeneralAttractions.slice(0, 3)].map(p => p.name),
       itinerary: itinerary.map(day => ({
         ...day,
-        activities: day.activities.slice(0, 3) // Fewer activities for budget option
+        activities: day.activities.slice(0, 3), // Fewer activities for budget option
+        pois: day.pois ? day.pois.slice(0, 3) : undefined // Also limit POIs
       }))
     }
   ];
