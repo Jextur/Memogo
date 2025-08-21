@@ -237,58 +237,6 @@ export class TagNormalizationService {
     }
   }
 
-  // Normalize user input to find or create appropriate tags
-  async normalizeUserInput(
-    userInput: string,
-    cityId: number,
-    inputType: 'text' | 'select' = 'text'
-  ): Promise<{
-    matchedTag?: CityTag;
-    candidateTags: CityTag[];
-    confidence: number;
-  }> {
-    // Get city tags for this city
-    const cityTags = await storage.getCityTags(cityId);
-    
-    // Normalize the input tag
-    const normalizedResult = await this.normalizeTag(
-      userInput,
-      cityTags,
-      await storage.getTagAliases(),
-      0.75 // 75% similarity threshold
-    );
-    
-    if (normalizedResult.matched) {
-      return {
-        matchedTag: normalizedResult.matched.tag,
-        candidateTags: [],
-        confidence: normalizedResult.matched.confidence
-      };
-    }
-    
-    // If no match, create a candidate tag
-    const candidateTag: CityTag = {
-      id: -1, // Temporary ID for candidates
-      cityId,
-      label: userInput,
-      normalizedLabel: this.normalizeText(userInput),
-      source: 'user',
-      score: '0.50',
-      placeIds: [],
-      metadata: { inputType },
-      usageCount: 0,
-      isActive: false, // Candidates are not active until validated
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    return {
-      matchedTag: undefined,
-      candidateTags: [candidateTag],
-      confidence: 0
-    };
-  }
-
   // Create a new tag from user input
   async createUserTag(
     tagText: string,

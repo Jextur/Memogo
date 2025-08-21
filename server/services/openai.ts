@@ -45,17 +45,6 @@ function fallbackConversation(context: ConversationContext): {
 } {
   const userMessage = context.messages[context.messages.length - 1]?.content || "";
   
-  // IMPORTANT: Check if we already have all required fields (from intent extraction)
-  // If we have destination, days, and people, jump directly to tag selector
-  if (context.destination && context.days && context.people && !context.theme) {
-    // This is the preferences step - show tag selector
-    return {
-      response: `Great! For your ${context.days}-day trip to ${context.destination}, are there any must-visit places or experiences you definitely want to include?`,
-      nextStep: "preferences",
-      options: [], // Let frontend show city-specific tags
-    };
-  }
-  
   // Check what step we're on based on context to help with ambiguous inputs
   const isAskingForDays = context.destination && !context.days;
   const isAskingForPeople = context.destination && context.days && !context.people;
@@ -63,60 +52,6 @@ function fallbackConversation(context: ConversationContext): {
   
   // Normalize the input (convert word numbers to digits, etc.)
   let { normalized, detectedDestination, isCountry, suggestedCities, detectedDays, detectedPeople } = normalizeUserInput(userMessage);
-  
-  // For first message, try to extract all info from a free-form message
-  // Check if this looks like a complete travel request
-  const isFirstRealMessage = context.messages.filter(m => m.role === 'user').length === 1;
-  if (isFirstRealMessage && !context.destination && !context.days && !context.people) {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    // Try to detect Tokyo, days, and people from message like "7-day trip to Tokyo with my girlfriend"
-    const tokyoMatch = lowerMessage.match(/tokyo|kyoto|osaka|paris|london|new york|barcelona|rome|bangkok|sydney|dubai|singapore/i);
-    const daysMatch = lowerMessage.match(/(\d+)\s*[-\s]?\s*day/i);
-    const peopleMatch = lowerMessage.match(/girlfriend|boyfriend|wife|husband|partner|spouse|couple|family|friends|solo|alone|myself/i);
-    
-    if (tokyoMatch) {
-      detectedDestination = tokyoMatch[0];
-      isCountry = false;
-    }
-    
-    if (daysMatch) {
-      detectedDays = parseInt(daysMatch[1]);
-    }
-    
-    if (peopleMatch) {
-      const matchText = peopleMatch[0].toLowerCase();
-      if (matchText.includes('girlfriend') || matchText.includes('boyfriend') || 
-          matchText.includes('wife') || matchText.includes('husband') || 
-          matchText.includes('partner') || matchText.includes('spouse') || 
-          matchText.includes('couple')) {
-        detectedPeople = 2;
-      } else if (matchText.includes('family')) {
-        detectedPeople = 4; // Default family size
-      } else if (matchText.includes('solo') || matchText.includes('alone') || matchText.includes('myself')) {
-        detectedPeople = 1;
-      }
-    }
-    
-    // If we detected all fields, return them all at once
-    if (detectedDestination && detectedDays && detectedPeople) {
-      // Capitalize destination properly
-      const capitalizedDestination = detectedDestination.split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-      
-      return {
-        response: `Perfect! A ${detectedDays}-day trip to ${capitalizedDestination} for ${detectedPeople === 2 ? 'two' : detectedPeople} people. Now, are there any must-visit places or experiences you definitely want to include?`,
-        nextStep: "preferences",
-        options: [], // Let frontend show city-specific tags
-        extractedInfo: { 
-          destination: capitalizedDestination,
-          days: detectedDays,
-          people: detectedPeople
-        }
-      };
-    }
-  }
   
   // Context-aware interpretation of simple numbers
   if (/^\d+$/.test(userMessage.trim()) || /^[a-z]+$/.test(userMessage.trim().toLowerCase())) {

@@ -73,17 +73,6 @@ A conversational AI travel planning platform that creates personalized travel pa
   - **Real-time Search**: As-you-type tag suggestions with confidence scores
   - **Google Places Validation**: Future-ready for validating unknown tags via Places API
   - **EnhancedTagSelector Component**: Visual categories, multi-select, custom input support
-- 2025-08-20: **Free-form Intent Extraction with OpenAI:**
-  - **Intent Extraction Service**: Parses natural language to extract destination, duration, companions, tags
-  - **Auto-generation Trigger**: Automatically generates packages when destination + duration + tags are extracted
-  - **Graceful Fallback**: Falls back to guided conversation when OpenAI API is unavailable or quota exceeded
-  - **Natural Language Processing**: Handles inputs like "7-day trip to Tokyo with my girlfriend for anime and food"
-  - **Field Normalization**: Maps extracted data to structured fields with city/country resolution
-  - **Companion Mapping**: Interprets "with my girlfriend" → couple, "family vacation" → family, etc.
-  - **Tag Extraction**: Identifies specific interests and attractions from natural language
-  - **Frontend Integration**: Updated chat interface with example prompts and free-form input encouragement
-  - **Error Handling**: Handles API quota limits gracefully without breaking the conversation flow
-  - **Hybrid Approach**: Users can either type naturally or follow guided questions
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

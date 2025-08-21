@@ -84,23 +84,42 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
   // Detect when to show tag selector (after city is selected, before themes)
   useEffect(() => {
-    if (!conversation || showTagSelector) return;
+    if (!conversation) return;
     
     const lastMessage = conversation.messages[conversation.messages.length - 1];
+    const lastUserMessage = [...conversation.messages].reverse().find(m => m.role === "user");
     
     // Check if we're at the preferences selection step
-    // This happens when we have destination, days, people but not theme
-    const isPreferencesStep = nextStep === "preferences" || 
-      (lastMessage?.role === "assistant" && 
-       (lastMessage.content?.toLowerCase().includes("must-visit places") ||
-        lastMessage.content?.toLowerCase().includes("experiences you")));
-    
-    // Check if we have all required fields to show tag selector
-    if (isPreferencesStep && conversation.destination && conversation.days && conversation.people && !conversation.theme) {
-      // Parse city from destination (format: "City, Country" or just "City")
-      const cityName = conversation.destination.split(',')[0].trim();
+    if (lastMessage?.role === "assistant" && 
+        (lastMessage.content?.toLowerCase().includes("must-visit places") ||
+         lastMessage.content?.toLowerCase().includes("experiences you") ||
+         nextStep === "preferences")) {
       
-      // Map city to country code
+      // Extract city info from conversation
+      const cityMessages = conversation.messages.filter(m => m.role === "user");
+      let cityName = "";
+      let countryCode = "";
+      
+      // Look for city name in user messages
+      for (const msg of cityMessages) {
+        // Common city patterns
+        const cityPatterns = [
+          /^(tokyo|kyoto|osaka|paris|london|new york|barcelona|rome|bangkok|sydney|dubai|singapore)/i,
+          /going to ([a-z\s]+)/i,
+          /visit ([a-z\s]+)/i,
+        ];
+        
+        for (const pattern of cityPatterns) {
+          const match = msg.content.match(pattern);
+          if (match) {
+            cityName = match[1] || match[0];
+            break;
+          }
+        }
+        if (cityName) break;
+      }
+      
+      // Map city to country code (simplified - you might want to enhance this)
       const cityCountryMap: Record<string, string> = {
         'tokyo': 'JP', 'kyoto': 'JP', 'osaka': 'JP', 'okinawa': 'JP',
         'new york': 'US', 'los angeles': 'US', 'san francisco': 'US', 'miami': 'US',
@@ -115,10 +134,9 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       };
       
       const normalizedCity = cityName.toLowerCase().trim();
-      const countryCode = cityCountryMap[normalizedCity] || 'US';
+      countryCode = cityCountryMap[normalizedCity] || 'US';
       
       if (cityName) {
-        console.log("Showing tag selector for city:", cityName, "with country code:", countryCode);
         setSelectedCity({ 
           name: cityName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), 
           countryCode 
@@ -126,7 +144,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         setShowTagSelector(true);
       }
     }
-  }, [conversation, nextStep, showTagSelector]);
+  }, [conversation]);
 
   // Notify parent when packages are ready
   useEffect(() => {
@@ -200,24 +218,14 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       
       <CardContent className="flex-1 p-4 overflow-y-auto space-y-4" style={{ maxHeight: "600px" }}>
         {showWelcome && (
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
-                <Bot className="text-brand-bg w-4 h-4" />
-              </div>
-              <div className="space-y-3">
-                <div className="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-md">
-                  <p className="text-sm text-brand-text">
-                    Hi! I'm your AI travel consultant. You can tell me about your dream trip in your own words, or I can guide you through a few questions. 🌏
-                  </p>
-                </div>
-                <div className="bg-brand-bg/30 rounded-lg px-4 py-3 max-w-md border border-brand-border/50">
-                  <p className="text-xs text-brand-mute mb-2">Try typing something like:</p>
-                  <p className="text-xs text-brand-text italic">
-                    "I want a 7-day trip to Tokyo with my girlfriend, interested in anime culture and local food"
-                  </p>
-                </div>
-              </div>
+          <div className="flex items-start space-x-3">
+            <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+              <Bot className="text-brand-bg w-4 h-4" />
+            </div>
+            <div className="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs">
+              <p className="text-sm text-brand-text">
+                Hi! I'm your AI travel consultant. Where would you like to go for your next adventure? 🌏
+              </p>
             </div>
           </div>
         )}
@@ -303,7 +311,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
           <Input
             ref={inputRef}
             type="text"
-            placeholder={messages.length === 0 ? "Describe your dream trip or type a destination..." : "Type your message..."}
+            placeholder="Type your message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}

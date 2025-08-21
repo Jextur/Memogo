@@ -6,39 +6,10 @@ import { searchPlaces, getPlaceDetails, getPhotoUrl } from "./services/googlePla
 import { insertConversationSchema, insertTravelPackageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
 import cityRoutes from "./routes/cities";
-import { intentExtractionService } from "./services/intentExtraction";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register city routes
   app.use('/api/cities', cityRoutes);
-  
-  // Intent extraction endpoint
-  app.post("/api/extract-intent", async (req, res) => {
-    try {
-      const { message } = req.body;
-      
-      // Extract intent from natural language
-      const extractedIntent = await intentExtractionService.extractIntent(message);
-      
-      // Normalize the extracted intent
-      const { normalized, cityId, confidence } = await intentExtractionService.normalizeExtractedIntent(extractedIntent);
-      
-      // Determine next steps
-      const { ready, missingFields, nextQuestion } = intentExtractionService.determineNextStep(normalized);
-      
-      res.json({
-        extractedIntent: normalized,
-        cityId,
-        confidence,
-        ready,
-        missingFields,
-        nextQuestion
-      });
-    } catch (error) {
-      console.error("Intent extraction error:", error);
-      res.status(500).json({ error: "Failed to extract intent" });
-    }
-  });
   
   // Conversation endpoints
   app.post("/api/conversation", async (req, res) => {
@@ -68,48 +39,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { message } = req.body;
       
-      let conversation = await storage.getConversation(id);
+      const conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
-      }
-      
-      // Extract intent from natural language if message appears to be free-form
-      let extractedIntent = null;
-      let shouldAutoGenerate = false;
-      
-      // Check if this is the first message and it contains travel-related keywords
-      if (conversation.messages.length === 0 && message.length > 20) {
-        const lowerMessage = message.toLowerCase();
-        const travelKeywords = ['trip', 'travel', 'visit', 'go to', 'vacation', 'holiday', 'tour', 'explore', 'days', 'week'];
-        const containsTravelKeywords = travelKeywords.some(keyword => lowerMessage.includes(keyword));
-        
-        if (containsTravelKeywords) {
-          // Extract intent from the message
-          extractedIntent = await intentExtractionService.extractIntent(message);
-          
-          // Normalize the extracted intent
-          const { normalized, cityId, confidence } = await intentExtractionService.normalizeExtractedIntent(extractedIntent);
-          extractedIntent = normalized;
-          
-          // Update conversation with extracted fields
-          if (extractedIntent.destination_city || extractedIntent.duration_days || extractedIntent.people_count) {
-            conversation = await storage.updateConversation(id, {
-              destination: extractedIntent.destination_city || conversation.destination,
-              days: extractedIntent.duration_days || conversation.days,
-              people: extractedIntent.people_count || conversation.people,
-              theme: extractedIntent.tags && extractedIntent.tags.length > 0 ? extractedIntent.tags.join(', ') : conversation.theme
-            });
-          }
-          
-          // Check if we have enough info to auto-generate packages
-          const { ready, missingFields, nextQuestion } = intentExtractionService.determineNextStep(extractedIntent);
-          shouldAutoGenerate = ready;
-          
-          // If not ready, we'll continue with the conversation flow
-          if (!ready && nextQuestion) {
-            // The assistant response will be generated below using the existing flow
-          }
-        }
       }
       
       // Add user message
@@ -118,78 +50,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "user" as const,
         content: message,
         timestamp: new Date(),
-        extractedIntent: extractedIntent // Store extracted intent for reference
       };
       
       const messages = [...(conversation.messages as any[]), userMessage];
       
-      // Check if we should auto-generate packages
-      if (shouldAutoGenerate && extractedIntent) {
-        // Auto-generate packages based on extracted intent
-        const aiMessage = {
-          id: randomUUID(),
-          role: "assistant" as const,
-          content: `Perfect! I understand you're looking for a ${extractedIntent.duration_days}-day trip to ${extractedIntent.destination_city}${extractedIntent.companions ? ` for ${extractedIntent.companions === 'couple' ? 'a couple' : extractedIntent.companions}` : ''}. I'll create personalized travel packages for you now...`,
-          timestamp: new Date(),
-        };
-        
-        const updatedMessages = [...messages, aiMessage];
-        
-        // Update conversation with both messages and extracted info
-        const updatedConversation = await storage.updateConversation(id, {
-          messages: updatedMessages,
-          destination: extractedIntent.destination_city || conversation.destination,
-          days: extractedIntent.duration_days || conversation.days,
-          people: extractedIntent.people_count || conversation.people,
-          theme: extractedIntent.tags.join(', ') || conversation.theme,
-        });
-        
-        res.json({
-          conversation: updatedConversation,
-          aiResponse: aiMessage,
-          nextStep: 'generate',
-          autoGenerate: true,
-          extractedIntent: extractedIntent
-        });
-      } else {
-        // Get AI response for normal conversation flow
-        // IMPORTANT: Use the updated conversation (which may have extracted fields)
-        const context = {
-          destination: conversation.destination || undefined,
-          days: conversation.days || undefined,
-          people: conversation.people || undefined,
-          theme: conversation.theme || undefined,
-          messages: messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })),
-        };
-        
-        const aiResponse = await continueConversation(context);
-        
-        // Add AI message
-        const aiMessage = {
-          id: randomUUID(),
-          role: "assistant" as const,
-          content: aiResponse.response,
-          timestamp: new Date(),
-          options: aiResponse.options,
-        };
-        
-        const updatedMessages = [...messages, aiMessage];
-        
-        // Update conversation with extracted info
-        const updatedConversation = await storage.updateConversation(id, {
-          messages: updatedMessages,
-          destination: aiResponse.extractedInfo?.destination || conversation.destination,
-          days: aiResponse.extractedInfo?.days || conversation.days,
-          people: aiResponse.extractedInfo?.people || conversation.people,
-          theme: aiResponse.extractedInfo?.theme || conversation.theme,
-        });
-        
-        res.json({
-          conversation: updatedConversation,
-          aiResponse: aiMessage,
-          nextStep: aiResponse.nextStep,
-        });
-      }
+      // Get AI response
+      const context = {
+        destination: conversation.destination || undefined,
+        days: conversation.days || undefined,
+        people: conversation.people || undefined,
+        theme: conversation.theme || undefined,
+        messages: messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })),
+      };
+      
+      const aiResponse = await continueConversation(context);
+      
+      // Add AI message
+      const aiMessage = {
+        id: randomUUID(),
+        role: "assistant" as const,
+        content: aiResponse.response,
+        timestamp: new Date(),
+        options: aiResponse.options,
+      };
+      
+      const updatedMessages = [...messages, aiMessage];
+      
+      // Update conversation with extracted info
+      const updatedConversation = await storage.updateConversation(id, {
+        messages: updatedMessages,
+        destination: aiResponse.extractedInfo?.destination || conversation.destination,
+        days: aiResponse.extractedInfo?.days || conversation.days,
+        people: aiResponse.extractedInfo?.people || conversation.people,
+        theme: aiResponse.extractedInfo?.theme || conversation.theme,
+      });
+      
+      res.json({
+        conversation: updatedConversation,
+        aiResponse: aiMessage,
+        nextStep: aiResponse.nextStep,
+      });
     } catch (error) {
       console.error("Message error:", error);
       res.status(500).json({ error: "Failed to process message" });
