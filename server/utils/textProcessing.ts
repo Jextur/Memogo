@@ -56,7 +56,7 @@ export const countryAliases: Record<string, string> = {
 
 // Popular cities by country - expanded with major travel destinations
 export const popularCities: Record<string, string[]> = {
-  'japan': ['Tokyo', 'Kyoto', 'Osaka', 'Okinawa', 'Sapporo', 'Fukuoka', 'Yokohama', 'Nagoya', 'Kobe', 'Hiroshima'],
+  'japan': ['Tokyo', 'Kyoto', 'Osaka', 'Okinawa', 'Sapporo', 'Hakodate', 'Fukuoka', 'Yokohama', 'Nagoya', 'Hiroshima'],
   'france': ['Paris', 'Nice', 'Lyon', 'Marseille', 'Bordeaux', 'Strasbourg', 'Toulouse', 'Lille', 'Cannes', 'Monaco'],
   'italy': ['Rome', 'Venice', 'Florence', 'Milan', 'Naples', 'Amalfi Coast', 'Sicily', 'Tuscany', 'Verona', 'Bologna'],
   'spain': ['Barcelona', 'Madrid', 'Seville', 'Valencia', 'Granada', 'Malaga', 'Bilbao', 'Ibiza', 'Mallorca', 'San Sebastian'],
@@ -141,6 +141,7 @@ export function fuzzyMatchDestination(input: string): {
     'osaka': 'Osaka, Japan',
     'okinawa': 'Okinawa, Japan',
     'sapporo': 'Sapporo, Japan',
+    'hakodate': 'Hakodate, Japan',
     'fukuoka': 'Fukuoka, Japan',
     'nagoya': 'Nagoya, Japan',
     'kobe': 'Kobe, Japan',

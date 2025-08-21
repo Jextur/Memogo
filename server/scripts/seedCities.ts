@@ -13,6 +13,7 @@ const CURATED_CITIES = {
     { name: 'Kyoto', placeId: 'ChIJ8cM8zdaoAWARPR27azYdlsA' },
     { name: 'Okinawa', placeId: 'ChIJ51ur7mJw9TQRBYPQqUlkxCk' },
     { name: 'Sapporo', placeId: 'ChIJybDUYxLpC18RPLUIIDM1VDI' },
+    { name: 'Hakodate', placeId: 'ChIJXcmNtYvyl18RlO6L1JEJpSM' },
     { name: 'Fukuoka', placeId: 'ChIJGZv0BW6QQTURh-C95XOPiD0' },
     { name: 'Nagoya', placeId: 'ChIJKwtT0WNwA2ARJKBi_Pw0vqg' },
     { name: 'Yokohama', placeId: 'ChIJm6cXLsoGGGARk-ngTygtEtY' },
@@ -236,9 +237,9 @@ async function seedCities() {
           cityName: city.name,
           countryCode: countryCode,
           countryName: countryNames[countryCode] || countryCode,
-          adminLevel1: null,
-          latitude: 0, // Will be enriched later via Google Places
-          longitude: 0,
+          adminLevel1: city.name === 'Sapporo' || city.name === 'Hakodate' ? 'Hokkaido' : null,
+          latitude: '0', // Will be enriched later via Google Places
+          longitude: '0',
           isCurated: true,
           popularity: 100, // Curated cities get high popularity
           metadata: null,

@@ -32,7 +32,12 @@ export const cityTagsData: CityTags[] = [
   {
     cityName: 'Sapporo',
     countryCode: 'JP',
-    tags: ['Snow Festival', 'Beer Museum', 'Ramen Alley', 'Ski Resorts', 'Odori Park', 'Fresh Seafood']
+    tags: ['Skiing', 'Snow Viewing', 'Sapporo Ramen', 'Snow Festival', 'Beer Museum', 'Odori Park', 'Fresh Seafood', 'Winter Scenery']
+  },
+  {
+    cityName: 'Hakodate',
+    countryCode: 'JP',
+    tags: ['Hakodate Night View', 'Mount Hakodate', 'Fresh Seafood Market', 'Star-Shaped Fort', 'Hot Springs', 'Historical District', 'Winter Illuminations']
   },
   
   // USA
