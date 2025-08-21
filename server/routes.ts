@@ -80,11 +80,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedMessages = [...messages, aiMessage];
       
       // Update conversation with extracted info
-      // Parse selected tags from theme field if it contains "I'm interested in:"
+      // Parse selected tags from theme field (tags are passed as comma-separated string in theme)
       let selectedTags = conversation.selectedTags || [];
-      if (aiResponse.extractedInfo?.theme && aiResponse.extractedInfo.theme.includes("I'm interested in:")) {
-        const tagString = aiResponse.extractedInfo.theme.replace("I'm interested in:", "").trim();
-        selectedTags = tagString.split(',').map(tag => tag.trim());
+      
+      // Check if the user message contains "I'm interested in:" (from tag selector)
+      if (message.includes("I'm interested in:")) {
+        const tagString = message.split(':')[1]?.trim() || "";
+        selectedTags = tagString.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0);
+      }
+      
+      // Also check if theme contains comma-separated tags (when extracted from message)
+      else if (aiResponse.extractedInfo?.theme && aiResponse.extractedInfo.theme.includes(',')) {
+        selectedTags = aiResponse.extractedInfo.theme.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0);
       }
       
       const updatedConversation = await storage.updateConversation(id, {

@@ -264,8 +264,13 @@ function buildDayItinerary(
 export async function generateEnhancedTravelPackages(
   request: EnhancedPackageGenerationRequest
 ): Promise<GeneratedPackage[]> {
-  console.log('Generating enhanced packages for:', request.destination);
+  console.log('=== ENHANCED PACKAGE GENERATION ===');
+  console.log('Destination:', request.destination);
+  console.log('Days:', request.days);
+  console.log('People:', request.people);
+  console.log('Theme:', request.theme);
   console.log('Selected tags:', request.selectedTags);
+  console.log('Number of tags:', request.selectedTags?.length || 0);
   
   const selectedTags = request.selectedTags || [];
   

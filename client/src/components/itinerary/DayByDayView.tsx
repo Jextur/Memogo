@@ -233,9 +233,21 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                       // Skip empty or placeholder activities
                       if (!activityName || activityName === "Evening leisure time") return null;
                       
-                      // Determine time slot based on index
-                      const timeSlot = index === 0 ? "morning" : index === 1 ? "afternoon" : "evening";
-                      const timeLabel = index === 0 ? "9:00 AM" : index === 1 ? "2:00 PM" : "6:00 PM";
+                      // Distribute activities across different time slots
+                      // For more than 3 activities, spread them out with different times
+                      const timeSlots = [
+                        { slot: "morning", label: "9:00 AM" },
+                        { slot: "morning", label: "11:00 AM" },
+                        { slot: "afternoon", label: "1:00 PM" },
+                        { slot: "afternoon", label: "3:00 PM" },
+                        { slot: "evening", label: "5:00 PM" },
+                        { slot: "evening", label: "7:00 PM" },
+                        { slot: "evening", label: "9:00 PM" }
+                      ];
+                      
+                      const timeInfo = timeSlots[Math.min(index, timeSlots.length - 1)];
+                      const timeSlot = timeInfo.slot;
+                      const timeLabel = timeInfo.label;
                       
                       // Determine activity type based on keywords
                       let activityType = "attraction";
