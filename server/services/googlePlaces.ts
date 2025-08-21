@@ -69,7 +69,7 @@ export async function searchPlaces(query: string, filters?: PlaceFilterOptions):
     
     // Apply quality filters
     if (filters) {
-      results = results.filter(place => {
+      results = results.filter((place: GooglePlacesResult) => {
         // Filter by minimum rating (default 4.2)
         if (filters.minRating && place.rating && place.rating < filters.minRating) {
           return false;
@@ -82,7 +82,7 @@ export async function searchPlaces(query: string, filters?: PlaceFilterOptions):
         
         // Filter by relevant types for the theme
         if (filters.relevantTypes && filters.relevantTypes.length > 0 && place.types) {
-          const hasRelevantType = place.types.some(type => 
+          const hasRelevantType = place.types.some((type: string) => 
             filters.relevantTypes?.includes(type)
           );
           if (!hasRelevantType) {
@@ -95,7 +95,7 @@ export async function searchPlaces(query: string, filters?: PlaceFilterOptions):
     }
     
     // Sort by rating and review count
-    results.sort((a, b) => {
+    results.sort((a: GooglePlacesResult, b: GooglePlacesResult) => {
       const scoreA = (a.rating || 0) * Math.log10((a.user_ratings_total || 1) + 1);
       const scoreB = (b.rating || 0) * Math.log10((b.user_ratings_total || 1) + 1);
       return scoreB - scoreA;

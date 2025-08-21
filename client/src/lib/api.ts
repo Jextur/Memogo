@@ -62,11 +62,22 @@ export async function exportPackage(packageId: string): Promise<void> {
 }
 
 // Places API
-export async function searchPlaces(query: string, theme?: string): Promise<{ results: POI[] }> {
+export async function searchPlaces(
+  query: string, 
+  options?: {
+    theme?: string;
+    city?: string;
+    tags?: string[];
+    timeSlot?: string;
+    conversationId?: string;
+  }
+): Promise<{ results: POI[] }> {
   const params = new URLSearchParams({ query });
-  if (theme) params.append('theme', theme);
-  params.append('minRating', '4.2');
-  params.append('minReviews', '500');
+  if (options?.theme) params.append('theme', options.theme);
+  if (options?.city) params.append('city', options.city);
+  if (options?.tags?.length) params.append('tags', options.tags.join(','));
+  if (options?.timeSlot) params.append('timeSlot', options.timeSlot);
+  if (options?.conversationId) params.append('conversationId', options.conversationId);
   
   const response = await apiRequest("GET", `/api/places/search?${params}`);
   return await response.json();

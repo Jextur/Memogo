@@ -137,6 +137,9 @@ export default function Home() {
         isOpen={showAddPOIModal}
         onClose={() => setShowAddPOIModal(false)}
         onAddPOI={handleAddPOI}
+        conversationId={conversationId || undefined}
+        city={selectedPackage?.destination}
+        tags={packages[0]?.metadata?.selectedTags as string[] | undefined}
       />
       {/* Floating Export Button (mobile) */}
       {selectedPackage && (

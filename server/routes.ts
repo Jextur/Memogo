@@ -305,19 +305,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Google Places endpoints
+  // Google Places endpoints with LLM ranking
   app.get("/api/places/search", async (req, res) => {
     try {
-      const { query, theme, minRating, minReviews } = req.query;
+      const { query, theme, minRating, minReviews, city, tags, timeSlot, conversationId } = req.query;
       
       if (!query || typeof query !== "string") {
         return res.status(400).json({ error: "Query parameter required" });
       }
       
-      // Apply quality filters
+      // Get conversation context if available
+      let conversationContext: any = {};
+      if (conversationId && typeof conversationId === 'string') {
+        const conversation = await storage.getConversation(conversationId);
+        if (conversation) {
+          conversationContext = {
+            city: conversation.destination,
+            tags: conversation.selectedTags || []
+          };
+        }
+      }
+      
+      // Build search query with city context
+      let searchQuery = query;
+      const searchCity = city || conversationContext.city;
+      if (searchCity && !query.toLowerCase().includes(searchCity.toLowerCase())) {
+        searchQuery = `${query} in ${searchCity}`;
+      }
+      
+      // Relax filters for initial search - we'll use LLM to filter
       const filters = {
-        minRating: minRating ? parseFloat(minRating as string) : 4.2,
-        minReviews: minReviews ? parseInt(minReviews as string) : 500,
+        minRating: 3.5, // Lowered from 4.2 to get more results
+        minReviews: 50,  // Lowered from 500 to get more results
         theme: theme as string | undefined
       };
       
@@ -332,7 +351,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (filters as any).relevantTypes = relevantTypes[theme];
       }
       
-      const results = await searchPlaces(query, filters);
+      // Search places with relaxed filters
+      const searchResults = await searchPlaces(searchQuery, filters);
+      
+      // If no results, try widening the search
+      let results = searchResults;
+      if (results.length === 0 && searchCity) {
+        // Try without city restriction
+        results = await searchPlaces(query, filters);
+      }
+      
+      // Apply LLM ranking if we have OpenAI key
+      if (process.env.OPENAI_API_KEY && results.length > 0) {
+        const { rankAndFilterPOIs } = await import('./services/llmRanking');
+        
+        const rankedResults = await rankAndFilterPOIs(results, {
+          query,
+          city: searchCity,
+          tags: conversationContext.tags || (tags ? (tags as string).split(',') : []),
+          timeSlot: timeSlot as string | undefined
+        });
+        
+        results = rankedResults;
+      } else {
+        // Fallback to simple quality filtering if no LLM
+        results = results
+          .filter(p => (p.rating || 0) >= 4.0 && (p.user_ratings_total || 0) >= 200)
+          .slice(0, 5);
+      }
       
       // Save POIs to storage with descriptions
       await Promise.all(
