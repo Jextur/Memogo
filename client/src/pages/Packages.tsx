@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { CleanPackageCard } from "@/components/packages/CleanPackageCard";
 import { usePackageStore } from "@/lib/packageStore";
@@ -9,7 +9,9 @@ import { TravelPackage } from "@/types/travel";
 
 export default function Packages() {
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
   const { packages: storedPackages, conversationId } = usePackageStore();
+  const isFromChat = searchString.includes("from=chat");
   
   // Try to fetch packages if not in store (e.g., direct navigation)
   const { data: fetchedPackages } = useQuery<TravelPackage[]>({
@@ -19,10 +21,16 @@ export default function Packages() {
   
   const packages = storedPackages.length > 0 ? storedPackages : (fetchedPackages || []);
   
-  // Scroll to top on mount
+  // Scroll to top on mount, show animation when coming from chat
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+    if (isFromChat) {
+      document.body.classList.add('page-transition');
+      setTimeout(() => {
+        document.body.classList.remove('page-transition');
+      }, 500);
+    }
+  }, [isFromChat]);
   
   const handleSelectPackage = (pkg: TravelPackage) => {
     setLocation(`/itinerary/${pkg.id}`);

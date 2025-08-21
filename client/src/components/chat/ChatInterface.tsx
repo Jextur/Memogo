@@ -35,9 +35,11 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
     nextStep,
   } = useConversation(conversationId);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change - always keep chat at bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 100);
   }, [conversation?.messages]);
 
   // Auto-focus input on mount and when conversation starts
@@ -207,7 +209,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
   const showWelcome = messages.length === 0;
 
   return (
-    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-full">
+    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[600px]">
       <CardHeader className="border-b border-brand-border">
         <CardTitle className="flex items-center gap-2 text-brand-text">
           <Plane className="w-5 h-5 text-brand-accent" />
@@ -216,7 +218,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         <p className="text-brand-mute text-sm">Chat with our AI travel consultant</p>
       </CardHeader>
       
-      <CardContent className="flex-1 p-4 overflow-y-auto space-y-4" style={{ maxHeight: "600px" }}>
+      <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
         {showWelcome && (
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">

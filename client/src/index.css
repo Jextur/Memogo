@@ -47,6 +47,20 @@
   animation: slideInBottom 0.3s ease-out forwards;
 }
 
+/* Page transition */
+.page-transition {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Toast customization to float properly */
+.fixed.bottom-20.right-4 {
+  position: fixed !important;
+  bottom: 5rem !important;
+  right: 1rem !important;
+  z-index: 50 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
 :root {
   --background: hsl(255, 63%, 26%);
   --foreground: hsl(240, 6%, 96%);
