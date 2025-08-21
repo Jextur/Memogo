@@ -28,6 +28,17 @@ A conversational AI travel planning platform that creates personalized travel pa
 - Security: Input validation, content filtering, rate limiting, no auto-persistence of user text
 
 ## Recent Changes
+- 2025-01-27: **Intelligent Itinerary Generation with Realistic Duration Estimates:**
+  - Implemented AI-powered itinerary builder that considers actual visit durations
+  - Added duration estimation based on POI types (theme parks: 8hrs, museums: 2-3hrs, etc.)
+  - Integrated OpenAI GPT-4 to reason about feasible daily combinations
+  - Prevents unrealistic groupings (e.g., Disneyland + Tokyo Tower on same day)
+  - Distributes attractions intelligently across all days based on duration and travel time
+  - Maximum 8 hours of activities per day with proper time slot allocation
+  - Considers travel time between locations (30 min average)
+  - Groups nearby attractions to minimize transit
+  - Balances each day with varied activity types (culture, food, shopping)
+  - Fallback algorithm ensures itinerary generation even if AI service fails
 - 2025-01-26: **Auto-Navigation and Improved User Flow:**
   - Implemented automatic navigation from Chat to Package Selection after AI generates 3 packages
   - Created proper routing structure: `/chat`, `/packages`, `/itinerary/:id`

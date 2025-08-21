@@ -1,8 +1,14 @@
 import { searchPlaces } from './googlePlaces';
 import type { PackageGenerationRequest, GeneratedPackage } from './openai';
 import { filterPOIs } from '../utils/safetyFilters';
+import { 
+  estimatePOIDuration, 
+  createIntelligentItinerary, 
+  convertToItineraryFormat,
+  type EnhancedPOI 
+} from './intelligentItineraryBuilder';
 
-interface POIWithReason {
+export interface POIWithReason {
   name: string;
   placeId: string;
   reason: string;
@@ -297,7 +303,7 @@ function buildDayItinerary(
 export async function generateEnhancedTravelPackages(
   request: EnhancedPackageGenerationRequest
 ): Promise<GeneratedPackage[]> {
-  console.log('=== ENHANCED PACKAGE GENERATION ===');
+  console.log('=== INTELLIGENT PACKAGE GENERATION ===');
   console.log('Destination:', request.destination);
   console.log('Days:', request.days);
   console.log('People:', request.people);
@@ -388,35 +394,53 @@ export async function generateEnhancedTravelPackages(
     });
   });
   
-  // Build itinerary for each day
-  const itinerary: DayItinerary[] = [];
-  const globalUsedPlaceIds = new Set<string>(); // Track used POIs across all days
+  // Enhance all POIs with duration estimates
+  const enhancedPOIs: EnhancedPOI[] = [
+    ...allTagPOIs,
+    ...allGeneralAttractions,
+    ...allDiningOptions
+  ].map(poi => ({
+    ...poi,
+    estimatedDuration: estimatePOIDuration(poi),
+    types: (poi as any).types || [],
+    openingHours: (poi as any).openingHours,
+    geometry: (poi as any).geometry
+  }));
   
-  for (let day = 1; day <= request.days; day++) {
-    itinerary.push(buildDayItinerary(
-      day,
-      request.destination,
-      allTagPOIs,
-      allGeneralAttractions,
-      allDiningOptions,
-      allPreferences,  // Pass all preferences (tags + free-text)
-      globalUsedPlaceIds,  // Pass the global tracking set
-      request.days  // Pass total days for better distribution
-    ));
-  }
+  // Use intelligent itinerary builder
+  const dayPlans = await createIntelligentItinerary(
+    enhancedPOIs,
+    request.days,
+    request.destination,
+    allPreferences
+  );
   
-  // Validate tag coverage
+  // Convert to the expected format
+  const itinerary = dayPlans.map(dayPlan => 
+    convertToItineraryFormat(dayPlan, request.destination)
+  )
+  
+  // Validate tag coverage in the intelligent itinerary
+  const usedPOIs = new Set<string>();
+  dayPlans.forEach(plan => {
+    [...plan.morningPOIs, ...plan.afternoonPOIs, ...plan.eveningPOIs].forEach(poi => {
+      usedPOIs.add(poi.placeId);
+    });
+  });
+  
   const tagsCovered = new Set<string>();
   allTagPOIs.forEach(poi => {
-    const tagMatch = poi.reason.match(/"([^"]+)"/);
-    if (tagMatch) {
-      tagsCovered.add(tagMatch[1]);
+    if (usedPOIs.has(poi.placeId)) {
+      const tagMatch = poi.reason.match(/"([^"]+)"/);
+      if (tagMatch) {
+        tagsCovered.add(tagMatch[1]);
+      }
     }
   });
   
   const missingTags = allPreferences.filter(tag => !tagsCovered.has(tag));
   if (missingTags.length > 0) {
-    console.warn('Warning: Could not find POIs for preferences:', missingTags);
+    console.warn('Warning: Some preferences not fully covered:', missingTags);
   }
   
   // Generate three package variations
@@ -472,10 +496,10 @@ export async function generateEnhancedTravelPackages(
   ];
   
   // Log coverage statistics
-  console.log(`Tag coverage: ${tagsCovered.size}/${selectedTags.length} tags represented`);
-  console.log(`Total unique POIs available: ${allTagPOIs.length + allGeneralAttractions.length + allDiningOptions.length}`);
-  console.log(`POIs with Place IDs: ${[...allTagPOIs, ...allGeneralAttractions, ...allDiningOptions].filter(p => p.placeId).length}`);
-  console.log(`Global dedupe: ${globalUsedPlaceIds.size} unique POIs used across all days`);
+  console.log(`Tag coverage: ${tagsCovered.size}/${allPreferences.length} preferences represented`);
+  console.log(`Total unique POIs available: ${enhancedPOIs.length}`);
+  console.log(`POIs used in itinerary: ${usedPOIs.size}`);
+  console.log(`Average feasibility score: ${dayPlans.reduce((sum, p) => sum + p.feasibilityScore, 0) / dayPlans.length}`);
   
   return packages;
 }
