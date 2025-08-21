@@ -212,29 +212,6 @@ export function ItineraryDetail() {
     setItinerary(newItinerary);
   };
 
-  // Handler for updating POI time
-  const handleUpdatePOITime = (dayIndex: number, poiId: string, newTime: string) => {
-    const newItinerary = [...itinerary];
-    const day = newItinerary[dayIndex];
-    
-    if (day.pois) {
-      const poi = day.pois.find((p: any) => p.id === poiId);
-      if (poi) {
-        poi.time = newTime;
-        poi.timeLabel = newTime.charAt(0).toUpperCase() + newTime.slice(1);
-        
-        // Re-sort POIs by time
-        const timeOrder: Record<string, number> = { morning: 0, afternoon: 1, evening: 2 };
-        day.pois.sort((a: any, b: any) => {
-          const aTime = timeOrder[a.time?.toLowerCase()] ?? 3;
-          const bTime = timeOrder[b.time?.toLowerCase()] ?? 3;
-          return aTime - bTime;
-        });
-      }
-    }
-    
-    setItinerary(newItinerary);
-  };
 
   // Handler for drag and drop
   const handleDragEnd = (result: any, dayIndex: number) => {
@@ -475,7 +452,6 @@ export function ItineraryDetail() {
                                               <POICard 
                                                 {...poi} 
                                                 onDelete={() => handleDeletePOI(index, poi.id)}
-                                                onTimeChange={(newTime) => handleUpdatePOITime(index, poi.id, newTime)}
                                               />
                                             </div>
                                           </div>
