@@ -215,15 +215,10 @@ export function ItineraryDetail() {
               <div className="text-xs text-gray-600">Days</div>
             </div>
             <div className="text-center">
-              <Button
-                onClick={() => setIsAddPOIModalOpen(true)}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto"
-                size="sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium">Add POI</span>
-              </Button>
-              <div className="text-xs text-gray-600 mt-1">Search & Add Places</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {pkg.itinerary?.reduce((sum, day: any) => sum + (day.pois?.length || day.activities?.length || 0), 0) || 39}
+              </div>
+              <div className="text-xs text-gray-600">Attractions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
@@ -280,22 +275,21 @@ export function ItineraryDetail() {
                       Day {day.day} — {day.location || day.title || `Exploring ${pkg.destination}`}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs md:text-sm text-gray-600">
+                      {day.pois?.length || day.activities?.length || 0} activities
+                    </span>
                     <Button
                       onClick={() => {
                         setSelectedDayIndex(index);
                         setIsAddPOIModalOpen(true);
                       }}
                       size="sm"
-                      variant="outline"
-                      className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
                     >
                       <Plus className="w-3 h-3 mr-1" />
                       Add POI
                     </Button>
-                    <span className="text-xs md:text-sm text-gray-600">
-                      ● {day.pois?.length || day.activities?.length || 0} activities
-                    </span>
                   </div>
                 </div>
               </div>
