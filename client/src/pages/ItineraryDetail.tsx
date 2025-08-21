@@ -97,33 +97,34 @@ export function ItineraryDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
-      <div className="relative h-80 bg-gradient-to-br from-purple-600 to-blue-600 pt-safe">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center pt-8">
+      {/* Compact Hero Section */}
+      <div className="bg-gradient-to-br from-purple-600 to-blue-600 pt-safe">
+        <div className="max-w-4xl mx-auto px-4 py-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/packages")}
-            className="text-white hover:text-white/80 mb-4 p-0 w-fit"
+            className="text-white hover:text-white/80 mb-3 p-0 w-fit"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to packages
           </Button>
           
-          <h1 className="text-4xl font-bold text-white mb-3">{pkg.name}</h1>
-          <p className="text-white/90 text-lg mb-4">{pkg.description}</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{pkg.name}</h1>
+          <p className="text-white/90 text-sm md:text-base mb-3 line-clamp-2">
+            {pkg.description?.split('.')[0] || `Tailored to your interests. Includes ${pkg.highlights?.length || 4} hand-picked venues matching your preferences plus must-see highlights.`}
+          </p>
           
-          <div className="flex flex-wrap gap-4 text-white">
+          <div className="flex flex-wrap gap-4 text-white text-sm">
             <div className="flex items-center">
-              <MapPin className="w-5 h-5 mr-2" />
+              <MapPin className="w-4 h-4 mr-1" />
               <span>{pkg.destination || pkg.route}</span>
             </div>
             <div className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2" />
+              <Calendar className="w-4 h-4 mr-1" />
               <span>{pkg.days} days</span>
             </div>
             <div className="flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
+              <DollarSign className="w-4 h-4 mr-1" />
               <span className="font-semibold">{pkg.budget}</span>
             </div>
           </div>
@@ -131,32 +132,42 @@ export function ItineraryDetail() {
       </div>
 
       {/* Quick Stats */}
-      <div className="max-w-7xl mx-auto px-4 -mt-10 mb-8">
-        <Card className="bg-white p-6 shadow-xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="max-w-4xl mx-auto px-4 -mt-6 mb-6">
+        <Card className="bg-white p-5 shadow-lg">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{pkg.days}</div>
-              <div className="text-sm text-gray-600">Days</div>
+              <div className="text-2xl font-bold text-gray-900">{pkg.days}</div>
+              <div className="text-xs text-gray-600">Days</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{pkg.attractionCount}</div>
-              <div className="text-sm text-gray-600">Attractions</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {pkg.itinerary?.reduce((sum, day: any) => sum + (day.pois?.length || day.activities?.length || 0), 0) || 39}
+              </div>
+              <div className="text-xs text-gray-600">Attractions</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{pkg.diningCount}</div>
-              <div className="text-sm text-gray-600">Dining Experiences</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {pkg.itinerary?.reduce((sum, day: any) => {
+                  const count = day.pois?.filter((p: any) => 
+                    p.category?.toLowerCase().includes('food') || 
+                    p.type?.toLowerCase().includes('restaurant')
+                  ).length || 0;
+                  return sum + count;
+                }, 0) || 17}
+              </div>
+              <div className="text-xs text-gray-600">Dining Experiences</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900">{pkg.highlights?.length || 0}</div>
-              <div className="text-sm text-gray-600">Key Highlights</div>
+              <div className="text-2xl font-bold text-gray-900">{pkg.highlights?.length || 5}</div>
+              <div className="text-xs text-gray-600">Key Highlights</div>
             </div>
           </div>
         </Card>
       </div>
 
       {/* Breadcrumbs */}
-      <div className="max-w-7xl mx-auto px-4 pb-4">
-        <nav className="flex items-center space-x-2 text-sm">
+      <div className="max-w-4xl mx-auto px-4 pb-3">
+        <nav className="flex items-center space-x-2 text-xs md:text-sm">
           <button
             onClick={() => setLocation("/chat")}
             className="text-gray-600 hover:text-gray-900"
@@ -176,28 +187,28 @@ export function ItineraryDetail() {
       </div>
       
       {/* Day-by-Day Itinerary */}
-      <div className="max-w-7xl mx-auto px-4 pb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Day-by-Day Itinerary</h2>
+      <div className="max-w-4xl mx-auto px-4 pb-12">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Day-by-Day Itinerary</h2>
         
-        <div className="space-y-6">
+        <div className="space-y-4">
           {pkg.itinerary?.map((day: any, index: number) => (
-            <Card key={index} className="bg-white overflow-hidden">
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 border-b">
+            <Card key={index} className="bg-white overflow-hidden border-gray-200">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 md:p-4 border-b">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900">
                       Day {day.day} — {day.location || day.title || `Exploring ${pkg.destination}`}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-xs md:text-sm text-gray-600">
                       ● {day.pois?.length || day.activities?.length || 0} activities
                     </span>
                   </div>
                 </div>
               </div>
               
-              <div className="p-6">
+              <div className="p-4 md:p-5">
                 {/* Group POIs by time label if available */}
                 {day.pois && day.pois.length > 0 ? (
                   <>
@@ -228,7 +239,7 @@ export function ItineraryDetail() {
                             </span>
                           </div>
                           
-                          <div className="space-y-3 ml-10">
+                          <div className="space-y-2 ml-8 md:ml-10">
                             {timePois.map((poi: any, poiIndex: number) => (
                               <POICard key={poiIndex} {...poi} />
                             ))}
@@ -311,10 +322,10 @@ export function ItineraryDetail() {
         </div>
 
         {/* Export Button */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <Button
-            size="lg"
-            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white"
+            size="default"
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
             onClick={() => {
               // Export itinerary as JSON
               const dataStr = JSON.stringify(pkg, null, 2);

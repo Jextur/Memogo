@@ -65,22 +65,22 @@ export function POICard({
   const mapsLink = mapsUrl || (placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : null);
   
   return (
-    <div className="border border-purple-300/30 rounded-xl p-4 hover:shadow-lg transition-all" style={{ backgroundColor: 'rgba(46, 16, 101, 0.08)', borderColor: 'rgba(147, 51, 234, 0.2)' }}>
-      <div className="flex gap-4">
+    <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
+      <div className="flex gap-3">
         {/* Icon */}
         <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-white/80 rounded-lg flex items-center justify-center shadow-sm">
-            <MapPin className="w-6 h-6 text-purple-600" />
+          <div className="w-10 h-10 bg-white/90 rounded-lg flex items-center justify-center shadow-sm">
+            <MapPin className="w-5 h-5 text-purple-600" />
           </div>
         </div>
         
         {/* Content */}
         <div className="flex-1">
           {/* Title and Price */}
-          <div className="flex items-start justify-between mb-2">
-            <h4 className="font-semibold text-gray-900 text-lg flex-1">{name}</h4>
+          <div className="flex items-start justify-between mb-1.5">
+            <h4 className="font-medium text-gray-900 text-sm md:text-base flex-1">{name}</h4>
             {priceLevel && (
-              <span className="text-sm text-gray-600 ml-4">
+              <span className="text-xs text-gray-600 ml-3">
                 {'$'.repeat(priceLevel)}
               </span>
             )}
@@ -88,7 +88,7 @@ export function POICard({
           
           {/* Rating and Reviews */}
           {rating && totalReviews >= 10 && (
-            <div className="mb-3">
+            <div className="mb-2">
               <StarRating 
                 rating={rating} 
                 reviewCount={totalReviews}
@@ -98,14 +98,14 @@ export function POICard({
           )}
           
           {/* Category and Duration Chips */}
-          <div className="flex flex-wrap items-center gap-2 mb-3">
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
             <Badge 
-              className="text-xs px-3 py-1 rounded-full bg-purple-600 text-white border-0 font-medium"
+              className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full bg-purple-600 text-white border-0 font-medium"
             >
               {displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1)}
             </Badge>
             <Badge 
-              className="text-xs px-3 py-1 rounded-full bg-white/80 text-gray-700 border-0"
+              className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border-0"
             >
               <Clock className="w-3 h-3 mr-1 inline" />
               {formattedDuration}
@@ -113,7 +113,7 @@ export function POICard({
           </div>
           
           {/* Description */}
-          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+          <p className="text-xs md:text-sm text-gray-600 mb-2 leading-relaxed">
             {truncatedDescription}
           </p>
           
