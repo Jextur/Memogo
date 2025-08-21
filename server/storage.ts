@@ -75,6 +75,7 @@ export class MemStorage implements IStorage {
   private initializeDefaultCities() {
     // Add some default cities
     const cities = [
+      // Japan cities
       {
         id: 1,
         googlePlaceId: 'ChIJ51cu8IcbXWARiRtXIothAS4',
@@ -116,6 +117,87 @@ export class MemStorage implements IStorage {
         adminLevel1: 'Osaka',
         latitude: '34.6937',
         longitude: '135.5023',
+        isCurated: true,
+        popularity: 85,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      // USA cities
+      {
+        id: 4,
+        googlePlaceId: 'ChIJOwg_06VPwokRYv534QaPC8g',
+        cityName: 'New York',
+        countryCode: 'US',
+        countryName: 'USA',
+        adminLevel1: 'New York',
+        latitude: '40.7128',
+        longitude: '-74.0060',
+        isCurated: true,
+        popularity: 100,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 5,
+        googlePlaceId: 'ChIJE9on3F3HwoAR9AhGJW_fL-I',
+        cityName: 'Los Angeles',
+        countryCode: 'US',
+        countryName: 'USA',
+        adminLevel1: 'California',
+        latitude: '34.0522',
+        longitude: '-118.2437',
+        isCurated: true,
+        popularity: 95,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 6,
+        googlePlaceId: 'ChIJ0X31pIK3voARo3mz1ebVzDo',
+        cityName: 'Las Vegas',
+        countryCode: 'US',
+        countryName: 'USA',
+        adminLevel1: 'Nevada',
+        latitude: '36.1699',
+        longitude: '-115.1398',
+        isCurated: true,
+        popularity: 90,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 7,
+        googlePlaceId: 'ChIJIQBpAG2ahYAR_6128GcTUEo',
+        cityName: 'San Francisco',
+        countryCode: 'US',
+        countryName: 'USA',
+        adminLevel1: 'California',
+        latitude: '37.7749',
+        longitude: '-122.4194',
+        isCurated: true,
+        popularity: 90,
+        metadata: {},
+        lastValidated: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 8,
+        googlePlaceId: 'ChIJEWSIqIas3YcRcr1FI7ZWpFA',
+        cityName: 'Miami',
+        countryCode: 'US',
+        countryName: 'USA',
+        adminLevel1: 'Florida',
+        latitude: '25.7617',
+        longitude: '-80.1918',
         isCurated: true,
         popularity: 85,
         metadata: {},
@@ -171,6 +253,86 @@ export class MemStorage implements IStorage {
           { label: 'Universal Studios Japan', aliases: ['USJ', 'ユニバーサル'], category: 'attraction' },
           { label: 'Shinsekai', aliases: ['新世界'], category: 'district' },
           { label: 'Namba', aliases: ['難波'], category: 'district' }
+        ]
+      },
+      // New York tags
+      {
+        cityId: 4,
+        tags: [
+          { label: 'Times Square', aliases: ['time square'], category: 'attraction' },
+          { label: 'Central Park', aliases: ['central prk'], category: 'attraction' },
+          { label: 'Statue of Liberty', aliases: ['lady liberty', 'liberty statue'], category: 'attraction' },
+          { label: 'Empire State Building', aliases: ['empire state'], category: 'attraction' },
+          { label: 'Brooklyn Bridge', aliases: ['brooklyn'], category: 'attraction' },
+          { label: 'Metropolitan Museum', aliases: ['The Met', 'met museum'], category: 'experience' },
+          { label: 'Broadway', aliases: ['broadway shows'], category: 'experience' },
+          { label: 'Wall Street', aliases: ['financial district'], category: 'district' },
+          { label: '9/11 Memorial', aliases: ['ground zero', 'world trade center'], category: 'attraction' },
+          { label: 'High Line', aliases: ['highline park'], category: 'experience' }
+        ]
+      },
+      // Los Angeles tags
+      {
+        cityId: 5,
+        tags: [
+          { label: 'Hollywood', aliases: ['hollywood sign', 'hollywood hills'], category: 'district' },
+          { label: 'Universal Studios', aliases: ['universal'], category: 'attraction' },
+          { label: 'Santa Monica Pier', aliases: ['santa monica beach'], category: 'attraction' },
+          { label: 'Beverly Hills', aliases: ['rodeo drive'], category: 'district' },
+          { label: 'Griffith Observatory', aliases: ['griffith park'], category: 'attraction' },
+          { label: 'Venice Beach', aliases: ['venice'], category: 'attraction' },
+          { label: 'Disneyland', aliases: ['disney'], category: 'attraction' },
+          { label: 'Getty Center', aliases: ['getty museum'], category: 'experience' },
+          { label: 'Malibu', aliases: ['malibu beach'], category: 'district' },
+          { label: 'Walk of Fame', aliases: ['hollywood walk'], category: 'attraction' }
+        ]
+      },
+      // Las Vegas tags
+      {
+        cityId: 6,
+        tags: [
+          { label: 'The Strip', aliases: ['las vegas strip', 'vegas strip'], category: 'district' },
+          { label: 'Bellagio Fountains', aliases: ['bellagio'], category: 'attraction' },
+          { label: 'Fremont Street', aliases: ['fremont'], category: 'district' },
+          { label: 'Grand Canyon Tours', aliases: ['grand canyon'], category: 'experience' },
+          { label: 'Caesars Palace', aliases: ['caesars'], category: 'attraction' },
+          { label: 'The Venetian', aliases: ['venetian'], category: 'attraction' },
+          { label: 'MGM Grand', aliases: ['mgm'], category: 'attraction' },
+          { label: 'Cirque du Soleil', aliases: ['cirque shows'], category: 'experience' },
+          { label: 'Red Rock Canyon', aliases: ['red rocks'], category: 'experience' },
+          { label: 'Hoover Dam', aliases: ['hoover'], category: 'attraction' }
+        ]
+      },
+      // San Francisco tags
+      {
+        cityId: 7,
+        tags: [
+          { label: 'Golden Gate Bridge', aliases: ['golden gate'], category: 'attraction' },
+          { label: 'Alcatraz Island', aliases: ['alcatraz'], category: 'attraction' },
+          { label: 'Fishermans Wharf', aliases: ['fisherman wharf'], category: 'district' },
+          { label: 'Chinatown', aliases: ['china town'], category: 'district' },
+          { label: 'Lombard Street', aliases: ['crooked street'], category: 'attraction' },
+          { label: 'Union Square', aliases: ['union sq'], category: 'district' },
+          { label: 'Golden Gate Park', aliases: ['gg park'], category: 'experience' },
+          { label: 'Cable Cars', aliases: ['trolley'], category: 'experience' },
+          { label: 'Pier 39', aliases: ['pier39'], category: 'attraction' },
+          { label: 'Sausalito', aliases: ['sausalito ferry'], category: 'experience' }
+        ]
+      },
+      // Miami tags
+      {
+        cityId: 8,
+        tags: [
+          { label: 'South Beach', aliases: ['south beach miami', 'sobe'], category: 'attraction' },
+          { label: 'Art Deco District', aliases: ['art deco'], category: 'district' },
+          { label: 'Little Havana', aliases: ['calle ocho'], category: 'district' },
+          { label: 'Wynwood Walls', aliases: ['wynwood'], category: 'attraction' },
+          { label: 'Everglades Tours', aliases: ['everglades'], category: 'experience' },
+          { label: 'Bayside Marketplace', aliases: ['bayside'], category: 'attraction' },
+          { label: 'Key Biscayne', aliases: ['key biscayne beach'], category: 'attraction' },
+          { label: 'Vizcaya Museum', aliases: ['vizcaya'], category: 'experience' },
+          { label: 'Ocean Drive', aliases: ['ocean dr'], category: 'district' },
+          { label: 'Coconut Grove', aliases: ['the grove'], category: 'district' }
         ]
       }
     ];

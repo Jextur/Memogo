@@ -24,6 +24,36 @@ export function normalizeNumberInput(text: string): string {
   return normalized;
 }
 
+// Country aliases mapping - maps variations to canonical names
+export const countryAliases: Record<string, string> = {
+  'america': 'usa',
+  'united states': 'usa',
+  'united states of america': 'usa',
+  'us': 'usa',
+  'u.s.': 'usa',
+  'u.s.a.': 'usa',
+  'u.s': 'usa',
+  'states': 'usa',
+  'the states': 'usa',
+  'uk': 'england',
+  'united kingdom': 'england',
+  'great britain': 'england',
+  'britain': 'england',
+  'gb': 'england',
+  'south korea': 'korea',
+  's korea': 'korea',
+  's. korea': 'korea',
+  'republic of korea': 'korea',
+  'uae': 'dubai',
+  'united arab emirates': 'dubai',
+  'emirates': 'dubai',
+  'the netherlands': 'netherlands',
+  'holland': 'netherlands',
+  'nz': 'new zealand',
+  'sa': 'south africa',
+  'rsa': 'south africa'
+};
+
 // Popular cities by country - expanded with major travel destinations
 export const popularCities: Record<string, string[]> = {
   'japan': ['Tokyo', 'Kyoto', 'Osaka', 'Okinawa', 'Sapporo', 'Fukuoka', 'Yokohama', 'Nagoya', 'Kobe', 'Hiroshima'],
@@ -77,18 +107,25 @@ export function fuzzyMatchDestination(input: string): {
 } {
   const normalized = input.toLowerCase().trim();
   
-  // Check if it's a known country first
+  // First check country aliases
+  const aliasMatch = countryAliases[normalized];
+  const searchTerm = aliasMatch || normalized;
+  
+  // Check if it's a known country (using alias or direct match)
   const countryMatch = Object.keys(popularCities).find(country => {
-    return country === normalized || 
-           levenshteinDistance(normalized, country) <= 2 ||
-           country.includes(normalized) ||
-           normalized.includes(country);
+    return country === searchTerm || 
+           levenshteinDistance(searchTerm, country) <= 2 ||
+           country.includes(searchTerm) ||
+           searchTerm.includes(country);
   });
   
   if (countryMatch) {
     const cities = getPopularCitiesForCountry(countryMatch);
+    // Format display name properly for known countries
+    const displayName = countryMatch === 'usa' ? 'USA' : 
+                       countryMatch.charAt(0).toUpperCase() + countryMatch.slice(1);
     return {
-      destination: countryMatch.charAt(0).toUpperCase() + countryMatch.slice(1),
+      destination: displayName,
       isCountry: true,
       suggestedCities: cities.slice(0, 5) // Return top 5 cities
     };

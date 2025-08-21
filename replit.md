@@ -73,6 +73,10 @@ A conversational AI travel planning platform that creates personalized travel pa
   - **Real-time Search**: As-you-type tag suggestions with confidence scores
   - **Google Places Validation**: Future-ready for validating unknown tags via Places API
   - **EnhancedTagSelector Component**: Visual categories, multi-select, custom input support
+  - **Country Alias Normalization**: "America", "United States", "U.S." all map to "USA" correctly
+  - **Expanded City Coverage**: Added comprehensive tags for 8 major US cities (New York, Los Angeles, Las Vegas, San Francisco, Miami)
+  - **Universal Tag Support**: All supported destinations now show relevant tags (no longer limited to Japan)
+  - **Fallback Mechanism**: Cities without specific tags show generic interests (Must-see Highlights, Local Food & Culture, etc.)
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript
