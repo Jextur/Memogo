@@ -223,8 +223,8 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
   }
 
   return (
-    <Card className="p-6 bg-white/95 backdrop-blur animate-fade-in">
-      <div className="space-y-4">
+    <Card className="p-3 sm:p-6 bg-white/95 backdrop-blur animate-fade-in">
+      <div className="space-y-2 max-h-[50vh] overflow-y-auto pb-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-800">
             {isDefault 
@@ -240,13 +240,13 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
         </div>
 
         {/* Available tags grouped by category */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {Object.entries(groupedTags).map(([category, tags]) => (
             <div key={category}>
               {!isDefault && (
                 <p className="text-xs text-gray-500 mb-1 capitalize">{category}</p>
               )}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {tags.map(tag => (
                   <Button
                     key={tag.label}
@@ -277,11 +277,11 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
-                placeholder={`Add your own (e.g., "TeamLab", "築地", "Shinjuku nightlife")`}
+                placeholder={`Add your own...`}
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCustomTag()}
-                className="pr-8"
+                className="pr-8 text-sm"
               />
               {isSearching && (
                 <Search className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-pulse" />
@@ -316,25 +316,25 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
           )}
         </div>
 
-        {/* Selected tags - moved closer to action buttons */}
+        {/* Selected tags - compact display */}
         {selectedTags.length > 0 && (
-          <div className="p-3 bg-purple-50 rounded-lg border-2 border-purple-200">
-            <p className="text-xs text-purple-600 font-medium mb-2">Your selections:</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="p-2 bg-purple-50 rounded-lg border border-purple-200">
+            <p className="text-xs text-purple-600 font-medium mb-1">Selected:</p>
+            <div className="flex flex-wrap gap-1">
               {selectedTags.map(tag => (
                 <Badge
                   key={tag}
-                  className="pl-3 pr-1 py-1.5 bg-purple-600 text-white hover:bg-purple-700 font-medium shadow-sm"
+                  className="pl-2 pr-1 py-1 bg-purple-600 text-white text-xs font-medium"
                 >
-                  <Check className="w-3 h-3 mr-1" />
+                  <Check className="w-2.5 h-2.5 mr-0.5" />
                   {tag}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="ml-1 h-auto p-0.5 hover:bg-purple-500"
+                    className="ml-0.5 h-auto p-0.5 hover:bg-purple-500"
                     onClick={() => removeTag(tag)}
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-2.5 h-2.5" />
                   </Button>
                 </Badge>
               ))}
@@ -342,25 +342,25 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-2 pt-0">
+      </div>
+      {/* Action buttons - outside scrollable area */}
+      <div className="flex gap-2 p-3 pt-2 border-t bg-white/95">
+        <Button
+          onClick={handleConfirm}
+          disabled={selectedTags.length === 0}
+          className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-sm py-2"
+        >
+          Continue ({selectedTags.length})
+        </Button>
+        {onSkip && (
           <Button
-            onClick={handleConfirm}
-            disabled={selectedTags.length === 0}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+            onClick={onSkip}
+            variant="outline"
+            className="border-gray-300 text-sm py-2"
           >
-            Continue with {selectedTags.length || 'no'} {selectedTags.length === 1 ? 'preference' : 'preferences'}
+            Skip
           </Button>
-          {onSkip && (
-            <Button
-              onClick={onSkip}
-              variant="outline"
-              className="border-gray-300"
-            >
-              Skip
-            </Button>
-          )}
-        </div>
+        )}
       </div>
     </Card>
   );

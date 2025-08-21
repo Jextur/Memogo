@@ -158,8 +158,9 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
   const handleSendMessage = () => {
     if (!message.trim() || isSendingMessage) return;
-    sendUserMessage(message);
-    setMessage("");
+    const messageToSend = message;
+    setMessage("");  // Clear immediately for better UX
+    sendUserMessage(messageToSend);
     // Auto-focus the input after sending a message
     setTimeout(() => {
       inputRef.current?.focus();
@@ -210,16 +211,16 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
   const showWelcome = messages.length === 0;
 
   return (
-    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[600px] relative">
-      <CardHeader className="border-b border-brand-border">
-        <CardTitle className="flex items-center gap-2 text-brand-text">
+    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[500px] relative">
+      <CardHeader className="border-b border-brand-border py-3">
+        <CardTitle className="flex items-center gap-2 text-brand-text text-lg">
           <Plane className="w-5 h-5 text-brand-accent" />
           Plan Your Perfect Trip
         </CardTitle>
         <p className="text-brand-mute text-sm">Chat with our AI travel consultant</p>
       </CardHeader>
       
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <div className="flex-1 p-4 overflow-y-auto space-y-4" style={{ paddingBottom: showTagSelector ? '100px' : '20px' }}>
         {showWelcome && (
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
@@ -280,7 +281,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
 
         {/* Show TagSelector when appropriate - with proper spacing */}
         {showTagSelector && selectedCity && !isSendingMessage && (
-          <div className="mt-4 mb-20 md:mb-4">
+          <div className="mt-4 pb-24">
             <EnhancedTagSelector
               cityName={selectedCity.name}
               countryCode={selectedCity.countryCode}
@@ -310,34 +311,28 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
       </div>
 
       {/* Fixed input area at bottom - always visible */}
-      <div className={`${showTagSelector ? 'absolute bottom-0 left-0 right-0 z-10' : ''} p-4 border-t border-brand-border bg-brand-card`}>
+      <div className="p-4 border-t border-brand-border bg-brand-card">
         <div className="flex space-x-2">
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onFocus={() => {
-                setIsInputFocused(true);
-                // Ensure the input is immediately interactive
-                setTimeout(() => {
-                  if (inputRef.current && !message) {
-                    inputRef.current.placeholder = "Type your message...";
-                  }
-                }, 0);
-              }}
-              onBlur={() => setIsInputFocused(false)}
-              onKeyPress={handleKeyPress}
-              className="w-full bg-brand-bg border-brand-border text-brand-text placeholder:text-brand-mute focus:border-brand-accent"
-              disabled={isSendingMessage || isGeneratingPackages}
-            />
-          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder={showTagSelector ? "Select your preferences above..." : "Type your message..."}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 px-3 py-2 bg-white border border-brand-border rounded-md text-brand-text placeholder:text-brand-mute focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent"
+            disabled={isSendingMessage || isGeneratingPackages || showTagSelector}
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="sentences"
+            spellCheck="true"
+          />
           <Button
             onClick={handleSendMessage}
-            disabled={!message.trim() || isSendingMessage || isGeneratingPackages}
-            className="bg-brand-accent text-brand-bg hover:bg-yellow-500"
+            disabled={!message.trim() || isSendingMessage || isGeneratingPackages || showTagSelector}
+            className="bg-brand-accent text-brand-bg hover:bg-yellow-500 px-3"
           >
             <Send className="w-4 h-4" />
           </Button>
