@@ -77,6 +77,17 @@ A conversational AI travel planning platform that creates personalized travel pa
   - **Expanded City Coverage**: Added comprehensive tags for 8 major US cities (New York, Los Angeles, Las Vegas, San Francisco, Miami)
   - **Universal Tag Support**: All supported destinations now show relevant tags (no longer limited to Japan)
   - **Fallback Mechanism**: Cities without specific tags show generic interests (Must-see Highlights, Local Food & Culture, etc.)
+- 2025-01-26: **Enhanced Itinerary Generation with Tag Support:**
+  - **Comprehensive City Database**: Seeded 39 major cities across 17 countries with curated tags
+  - **Tag-Driven POI Selection**: Created enhancedPackageGenerator service that respects user-selected tags
+  - **Real Google Places Integration**: All POIs have valid Place IDs and ratings from Google Places API
+  - **Balanced Itinerary Generation**: Each day includes 1-2 tag-related POIs plus must-see attractions
+  - **Multi-lingual Tag Support**: Tags include native language aliases (Japanese, Korean, Thai, Chinese, Arabic, Greek)
+  - **Quality Filters**: POIs filtered by minimum rating (4.0+) and review count (100+)
+  - **Tag Coverage Validation**: System ensures each selected tag appears at least once in itinerary
+  - **Smart POI Categorization**: Automatic categorization of venues (food, culture, shopping, nightlife, nature)
+  - **Explanations for POI Selection**: Each POI includes reason tied to tag or popularity
+  - **Three Package Types**: Classic (tag-focused), Foodie (culinary), and Budget options
 
 ## Technical Stack
 - Full-stack JavaScript with TypeScript

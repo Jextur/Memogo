@@ -16,7 +16,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId, destination, days, people, theme } = req.body;
       
+      const conversationId = randomUUID();
       const conversation = await storage.createConversation({
+        conversationId,
         userId,
         destination,
         days,
@@ -77,12 +79,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedMessages = [...messages, aiMessage];
       
       // Update conversation with extracted info
+      // Parse selected tags from theme field if it contains "I'm interested in:"
+      let selectedTags = conversation.selectedTags || [];
+      if (aiResponse.extractedInfo?.theme && aiResponse.extractedInfo.theme.includes("I'm interested in:")) {
+        const tagString = aiResponse.extractedInfo.theme.replace("I'm interested in:", "").trim();
+        selectedTags = tagString.split(',').map(tag => tag.trim());
+      }
+      
       const updatedConversation = await storage.updateConversation(id, {
         messages: updatedMessages,
         destination: aiResponse.extractedInfo?.destination || conversation.destination,
         days: aiResponse.extractedInfo?.days || conversation.days,
         people: aiResponse.extractedInfo?.people || conversation.people,
         theme: aiResponse.extractedInfo?.theme || conversation.theme,
+        selectedTags: selectedTags.length > 0 ? selectedTags : conversation.selectedTags,
       });
       
       res.json({
@@ -126,11 +136,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required conversation data" });
       }
       
-      const packages = await generateTravelPackages({
+      // Use enhanced package generator if tags are selected
+      const { generateEnhancedTravelPackages } = await import('./services/enhancedPackageGenerator');
+      
+      const packages = await generateEnhancedTravelPackages({
         destination: conversation.destination,
         days: conversation.days,
         people: conversation.people || 1,
         theme: conversation.theme,
+        selectedTags: conversation.selectedTags || []
       });
       
       // Save packages to storage
@@ -139,6 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           conversationId: id,
           name: pkg.name,
           type: pkg.type,
+          packageName: pkg.name,
+          packageType: pkg.type,
           destination: conversation.destination!,
           days: conversation.days!,
           budget: pkg.budget,
@@ -272,7 +288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const existingPOI = await storage.getPOIByPlaceId(place.place_id);
           if (!existingPOI) {
             await storage.createPOI({
-              id: randomUUID(),
               placeId: place.place_id,
               name: place.name,
               rating: place.rating ? place.rating.toString() : undefined,

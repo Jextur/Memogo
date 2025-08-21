@@ -1,0 +1,49 @@
+Objective
+
+Improve the itinerary generation so that user-selected tags are meaningfully respected, while still ensuring a balanced and enjoyable trip with high-quality, real venues from Google Places.
+
+Requirements (updated)
+	1.	Tag coverage rule (balanced, not absolute):
+	•	Every selected tag must appear at least once in the itinerary (more if the trip length allows).
+	•	Each day should include 1–2 POIs that clearly align with selected tags, but not dominate the entire plan.
+	•	Remaining slots should be filled with popular, high-quality city highlights to keep the trip well-rounded.
+	2.	Real venues only:
+	•	Every POI must have a valid Google Place ID and name.
+	•	No placeholders or generic labels.
+	3.	Quality bar:
+	•	Prefer venues with strong signals (rating, review count, popularity).
+	•	Avoid low-rated tourist traps unless explicitly demanded.
+	4.	Diversity & duplication rules:
+	•	No duplicate POIs per day.
+	•	Balanced categories across the itinerary (food, culture, landmarks, shopping).
+	•	Ensure variety across days.
+	5.	Feasibility constraints:
+	•	Respect opening hours and geography.
+	•	Optimize sequencing to minimize travel time.
+	•	Flag closures/seasonality with clear substitutes.
+	6.	Traveler context alignment:
+	•	Respect companions, budget, and trip length.
+	•	Family trips avoid nightlife unless requested.
+	7.	Role split:
+	•	Google Places: grounding (place ids, popularity, hours).
+	•	ChatGPT: enforce tag integration, write narrative, explain “why.”
+	8.	Explanations:
+	•	Each POI must include a short reason tied to a tag or popularity factor.
+	•	Daily headers summarize tag coverage.
+	9.	Graceful degradation:
+	•	If a tag cannot be met, show a close substitute and label it clearly.
+	10.	Validation & safeguards:
+
+	•	Do not output POIs without Place IDs.
+	•	If fewer than 70% of POIs have strong quality signals, request one more tag from the user to refine.
+
+⸻
+
+Acceptance Criteria (revised)
+	•	For tags [ramen, Akihabara, Tokyo Tower] in Tokyo (3 days):
+	•	Each tag is represented at least once.
+	•	Each day shows 1–2 tag-driven POIs, plus other top attractions like Shibuya Crossing or Meiji Shrine.
+	•	For NYC with tags [Broadway show, jazz bar, steakhouse] (2 days, couple):
+	•	All three tags appear in the trip.
+	•	Remaining slots filled with high-quality highlights (Central Park, Empire State Building).
+	•	If input is free-form (e.g., “Seoul 4 days, street food + palaces + K-pop spots”), tags drive POI choices but the itinerary also includes must-see venues.

@@ -1434,7 +1434,12 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      email: insertUser.email || null,
+      createdAt: new Date()
+    };
     this.users.set(id, user);
     return user;
   }
@@ -1446,17 +1451,22 @@ export class MemStorage implements IStorage {
 
   async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
     const id = randomUUID();
+    const numericId = Math.max(...Array.from(this.conversations.keys()).map(k => parseInt(k) || 0), 0) + 1;
     const conversation: Conversation = {
-      id,
+      id: numericId,
+      conversationId: insertConversation.conversationId,
       userId: insertConversation.userId || null,
       destination: insertConversation.destination || null,
       days: insertConversation.days || null,
       people: insertConversation.people || null,
       theme: insertConversation.theme || null,
+      selectedTags: insertConversation.selectedTags || null,
       status: insertConversation.status || "active",
-      messages: insertConversation.messages || [],
+      messages: insertConversation.messages as ChatMessage[] || [],
       refinementCount: insertConversation.refinementCount || 0,
+      packagesGenerated: insertConversation.packagesGenerated || false,
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
     this.conversations.set(id, conversation);
     return conversation;
