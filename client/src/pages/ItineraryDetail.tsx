@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TravelPackage } from "@/types/travel";
 import { Star } from "lucide-react";
 import { usePackageStore } from "@/lib/packageStore";
-import { StarRating } from "@/components/ui/StarRating";
+import { POICard } from "@/components/itinerary/POICard";
 import {
   ArrowLeft,
   MapPin,
@@ -98,9 +98,9 @@ export function ItineraryDetail() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="relative h-80 bg-gradient-to-br from-purple-600 to-blue-600">
+      <div className="relative h-80 bg-gradient-to-br from-purple-600 to-blue-600 pt-safe">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
+        <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center pt-8">
           <Button
             variant="ghost"
             onClick={() => setLocation("/packages")}
@@ -198,118 +198,60 @@ export function ItineraryDetail() {
               </div>
               
               <div className="p-6">
-                {/* Group POIs by time label */}
-                {['Morning', 'Afternoon', 'Evening'].map((timeLabel) => {
-                  const timePois = day.pois?.filter((poi: any) => 
-                    poi.timeLabel === timeLabel || 
-                    (poi.time && poi.time.toLowerCase().includes(timeLabel.toLowerCase()))
-                  ) || [];
-                  
-                  if (timePois.length === 0) return null;
-                  
-                  return (
-                    <div key={timeLabel} className="mb-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
-                          {timeLabel === 'Morning' && <Sun className="w-4 h-4 text-white" />}
-                          {timeLabel === 'Afternoon' && <Sun className="w-4 h-4 text-white" />}
-                          {timeLabel === 'Evening' && <Moon className="w-4 h-4 text-white" />}
-                        </div>
-                        <span className="text-sm font-semibold text-purple-600">
-                          {timeLabel} {timePois[0]?.time && `(${timePois[0].time})`}
-                        </span>
-                      </div>
+                {/* Group POIs by time label if available */}
+                {day.pois && day.pois.length > 0 ? (
+                  <>
+                    {['Morning', 'Afternoon', 'Evening'].map((timeLabel) => {
+                      const timePois = day.pois?.filter((poi: any) => 
+                        poi.timeLabel === timeLabel || 
+                        (poi.time && poi.time.toLowerCase().includes(timeLabel.toLowerCase()))
+                      ) || [];
                       
-                      <div className="space-y-3 ml-10">
-                        {timePois.map((poi: any, poiIndex: number) => {
-                          // Truncate description to 120 chars
-                          const truncatedDescription = poi.description && poi.description.length > 120 
-                            ? poi.description.substring(0, 117) + '...' 
-                            : poi.description || 'Must-visit attraction showcasing local highlights';
-                          
-                          // Format duration
-                          const formattedDuration = poi.durationHours 
-                            ? `~${poi.durationHours} hour${poi.durationHours > 1 ? 's' : ''}`
-                            : poi.duration || '~2 hours';
-                          
-                          // Format review count with thousands separator
-                          const formattedReviews = poi.reviewCount || poi.reviewsCount || poi.user_ratings_total;
-                          
-                          return (
-                            <div key={poiIndex} className="bg-white border border-purple-100 rounded-xl p-4 hover:shadow-md transition-shadow">
-                              <div className="flex gap-4">
-                                <div className="flex-shrink-0">
-                                  <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                                    <MapPin className="w-6 h-6 text-purple-500" />
-                                  </div>
-                                </div>
-                                
-                                <div className="flex-1">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className="flex-1">
-                                      <h4 className="font-semibold text-gray-900 text-lg mb-1">{poi.name}</h4>
-                                      
-                                      {/* Star rating with review count */}
-                                      {poi.rating && formattedReviews && formattedReviews >= 10 && (
-                                        <StarRating 
-                                          rating={poi.rating} 
-                                          reviewCount={formattedReviews}
-                                          size="sm"
-                                        />
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Category and duration chips */}
-                                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                                    <Badge 
-                                      className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 border-0"
-                                    >
-                                      {poi.category?.charAt(0).toUpperCase() + poi.category?.slice(1) || 'Attraction'}
-                                    </Badge>
-                                    <Badge 
-                                      className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 border-0"
-                                    >
-                                      {formattedDuration}
-                                    </Badge>
-                                  </div>
-                                  
-                                  {/* Description */}
-                                  <p className="text-sm text-gray-500 mb-3">{truncatedDescription}</p>
-                                  
-                                  {/* Find on Maps link */}
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex flex-wrap gap-1">
-                                      {poi.tags && poi.tags.length > 0 && poi.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
-                                        <span 
-                                          key={tagIndex}
-                                          className="text-xs px-2 py-0.5 text-gray-500 bg-gray-50 rounded"
-                                        >
-                                          {tag}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    {(poi.placeId || poi.mapsUrl) && (
-                                      <a
-                                        href={poi.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${poi.placeId}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center text-xs text-purple-600 hover:text-purple-800 transition-colors font-medium"
-                                      >
-                                        <MapPin className="w-3 h-3 mr-1" />
-                                        Find on Maps
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
+                      if (timePois.length === 0) return null;
+                      
+                      return (
+                        <div key={timeLabel} className="mb-6">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                              {timeLabel === 'Morning' && <Sun className="w-4 h-4 text-white" />}
+                              {timeLabel === 'Afternoon' && <Sun className="w-4 h-4 text-white" />}
+                              {timeLabel === 'Evening' && <Moon className="w-4 h-4 text-white" />}
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                            <span className="text-sm font-semibold text-purple-600">
+                              {timeLabel} {timePois[0]?.time && `(${timePois[0].time})`}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-3 ml-10">
+                            {timePois.map((poi: any, poiIndex: number) => (
+                              <POICard key={poiIndex} {...poi} />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    
+                    {/* POIs without time labels */}
+                    {(() => {
+                      const untimedPois = day.pois?.filter((poi: any) => 
+                        !poi.timeLabel && 
+                        (!poi.time || !['morning', 'afternoon', 'evening'].some(t => 
+                          poi.time.toLowerCase().includes(t)
+                        ))
+                      ) || [];
+                      
+                      if (untimedPois.length === 0) return null;
+                      
+                      return (
+                        <div className="space-y-3">
+                          {untimedPois.map((poi: any, poiIndex: number) => (
+                            <POICard key={`untimed-${poiIndex}`} {...poi} />
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </>
+                ) : null}
                   
                 {/* Fallback to activities if POIs not available */}
                 {!day.pois && day.activities?.map((activity: string, actIndex: number) => (

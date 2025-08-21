@@ -54,7 +54,7 @@ export function StarRating({
           </span>
           {reviewCount !== undefined && (
             <span className={`${textSize}`} style={{ color: '#9CA3AF' }}>
-              ({reviewCount >= 1000 ? `${(reviewCount / 1000).toFixed(1)}k` : reviewCount} reviews)
+              ({reviewCount >= 1000 ? `${(reviewCount / 1000).toFixed(1)}k` : reviewCount.toLocaleString()} reviews)
             </span>
           )}
         </div>
