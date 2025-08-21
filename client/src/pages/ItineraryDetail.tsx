@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { TravelPackage } from "@/types/travel";
 import { Star } from "lucide-react";
 import { usePackageStore } from "@/lib/packageStore";
+import { StarRating } from "@/components/ui/StarRating";
 import {
   ArrowLeft,
   MapPin,
@@ -183,90 +184,128 @@ export function ItineraryDetail() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Day {day.day} - {day.title || day.location}
+                      Day {day.day} — {day.location || day.title || `Exploring ${pkg.destination}`}
                     </h3>
-                    {day.location && (
-                      <div className="flex items-center text-sm text-gray-600 mt-1">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        {day.location}
-                      </div>
-                    )}
                   </div>
-                  <Badge className="bg-white text-gray-700">
-                    {day.activities?.length || 0} activities
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600">
+                      ● {day.pois?.length || day.activities?.length || 0} activities
+                    </span>
+                  </div>
                 </div>
               </div>
               
               <div className="p-6">
                 <div className="space-y-4">
-                  {day.pois?.map((poi: any, poiIndex: number) => (
-                    <div key={poiIndex} className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex-shrink-0">
-                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                          {getActivityIcon(poi.category || poi.type || '')}
+                  {day.pois?.map((poi: any, poiIndex: number) => {
+                    // Truncate description to 120 chars
+                    const truncatedDescription = poi.description && poi.description.length > 120 
+                      ? poi.description.substring(0, 117) + '...' 
+                      : poi.description;
+                    
+                    // Format duration
+                    const formattedDuration = poi.durationHours 
+                      ? `~${poi.durationHours} hour${poi.durationHours > 1 ? 's' : ''}`
+                      : poi.duration;
+                    
+                    return (
+                      <div key={poiIndex} className="flex gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex-shrink-0">
+                          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            {getActivityIcon(poi.category || poi.type || '')}
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-semibold text-gray-900">{poi.name}</h4>
-                            {poi.rating && (
-                              <div className="flex items-center gap-2 mt-1">
-                                <div className="flex items-center">
-                                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                  <span className="text-sm font-medium ml-1">{poi.rating}</span>
-                                </div>
-                                {poi.reviewCount && (
-                                  <span className="text-xs text-gray-500">
-                                    ({poi.reviewCount.toLocaleString()} reviews)
-                                  </span>
-                                )}
-                              </div>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-1">{poi.name}</h4>
+                              
+                              {/* Star rating with review count */}
+                              {poi.rating && (
+                                <StarRating 
+                                  rating={poi.rating} 
+                                  reviewCount={poi.reviewCount || poi.reviewsCount}
+                                  size="sm"
+                                />
+                              )}
+                            </div>
+                            
+                            {/* Price level */}
+                            {poi.priceLevel && (
+                              <span className="text-sm text-gray-600 ml-4">
+                                {'$'.repeat(poi.priceLevel)}
+                              </span>
                             )}
                           </div>
-                          {poi.priceLevel && (
-                            <span className="text-sm text-gray-600">
-                              {'$'.repeat(poi.priceLevel)}
-                            </span>
+                          
+                          {/* Category and duration chips */}
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            {poi.category && (
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs px-2 py-0.5 rounded-full ${getCategoryColor(poi.category)}`}
+                              >
+                                {poi.category.charAt(0).toUpperCase() + poi.category.slice(1)}
+                              </Badge>
+                            )}
+                            {formattedDuration && (
+                              <Badge 
+                                variant="outline"
+                                className="text-xs px-2 py-0.5 rounded-full text-gray-600 border-gray-300"
+                              >
+                                <Clock className="w-3 h-3 mr-1" />
+                                {formattedDuration}
+                              </Badge>
+                            )}
+                            {poi.timeLabel && (
+                              <Badge 
+                                variant="outline"
+                                className="text-xs px-2 py-0.5 rounded-full text-gray-600 border-gray-300"
+                              >
+                                {poi.timeLabel}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {/* Description */}
+                          {truncatedDescription && (
+                            <p className="text-sm text-gray-600 mb-2">{truncatedDescription}</p>
                           )}
-                        </div>
-                        
-                        {poi.description && (
-                          <p className="text-sm text-gray-600 mb-2">{poi.description}</p>
-                        )}
-                        
-                        <div className="flex items-center gap-2">
-                          {poi.category && (
-                            <Badge 
-                              variant="secondary" 
-                              className={`text-xs ${getCategoryColor(poi.category)}`}
-                            >
-                              {poi.category}
-                            </Badge>
-                          )}
-                          {poi.duration && (
-                            <div className="flex items-center text-xs text-gray-500">
-                              <Clock className="w-3 h-3 mr-1" />
-                              {poi.duration}
+                          
+                          {/* Tags */}
+                          {poi.tags && poi.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {poi.tags.slice(0, 3).map((tag: string, tagIndex: number) => (
+                                <Badge 
+                                  key={tagIndex}
+                                  variant="outline" 
+                                  className="text-xs px-2 py-0 text-gray-500 border-gray-200 bg-gray-50"
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
                             </div>
                           )}
-                          {poi.placeId && (
-                            <a
-                              href={`https://www.google.com/maps/place/?q=place_id:${poi.placeId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center text-xs text-blue-600 hover:text-blue-800"
-                            >
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              View on Maps
-                            </a>
-                          )}
+                          
+                          {/* Find on Maps link */}
+                          <div className="flex justify-end">
+                            {(poi.placeId || poi.mapsUrl) && (
+                              <a
+                                href={poi.mapsUrl || `https://www.google.com/maps/place/?q=place_id:${poi.placeId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                Find on Maps
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {/* Fallback to activities if POIs not available */}
                   {!day.pois && day.activities?.map((activity: string, actIndex: number) => (
