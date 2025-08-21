@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { mapGooglePlaceTypeToPOIVariant, getPOIColorStyle } from "@/config/poiTypeConfig";
 
 interface POICardProps {
   name: string;
@@ -19,6 +20,7 @@ interface POICardProps {
   user_ratings_total?: number;
   category?: string;
   type?: string;
+  types?: string[];
   duration?: string;
   durationHours?: number;
   durationMinutes?: number;
@@ -41,6 +43,7 @@ export function POICard({
   user_ratings_total,
   category,
   type,
+  types,
   duration,
   durationHours,
   durationMinutes,
@@ -55,6 +58,9 @@ export function POICard({
   onTimeChange
 }: POICardProps) {
   const [isEditingTime, setIsEditingTime] = useState(false);
+  const [categoryHover, setCategoryHover] = useState(false);
+  const [categoryPressed, setCategoryPressed] = useState(false);
+  
   // Get review count from various possible fields
   const totalReviews = reviewCount || reviewsCount || user_ratings_total || 0;
   
@@ -63,6 +69,9 @@ export function POICard({
   
   // Ensure category is properly formatted (capitalize first letter if needed)
   const formattedCategory = displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1);
+  
+  // Get POI variant for color coding
+  const poiVariant = mapGooglePlaceTypeToPOIVariant(types);
   
   // Format duration with more intelligent display
   let formattedDuration = duration;
@@ -126,11 +135,11 @@ export function POICard({
     ? description.substring(0, 117) + '...'
     : description || 'Must-visit attraction showcasing local highlights';
   
-  // Format maps URL - Use Google Maps API format that works for both mobile and desktop
-  const mapsLink = mapsUrl || 
-    (placeId 
-      ? `https://www.google.com/maps/search/?api=1&query_place_id=${placeId}`
-      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
+  // Format maps URL - Always use place_id when available for accuracy
+  // This format opens the exact place in Google Maps app (if installed) or web
+  const mapsLink = placeId 
+    ? `https://www.google.com/maps/search/?api=1&query_place_id=${placeId}&query=${encodeURIComponent(name)}`
+    : mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
   
   return (
     <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all relative" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
@@ -215,7 +224,18 @@ export function POICard({
           {/* Category and Duration Chips */}
           <div className="flex flex-wrap items-center gap-1.5 mb-2">
             <Badge 
-              className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full bg-purple-600 text-white border-0 font-medium"
+              className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full border-0 font-medium transition-colors cursor-default"
+              style={getPOIColorStyle(
+                poiVariant, 
+                categoryPressed ? 'pressed' : categoryHover ? 'hover' : 'default'
+              )}
+              onMouseEnter={() => setCategoryHover(true)}
+              onMouseLeave={() => {
+                setCategoryHover(false);
+                setCategoryPressed(false);
+              }}
+              onMouseDown={() => setCategoryPressed(true)}
+              onMouseUp={() => setCategoryPressed(false)}
             >
               {formattedCategory}
             </Badge>
