@@ -140,79 +140,52 @@ export function PackagePreview({
               }`}
               onClick={() => handlePackageClick(pkg)}
             >
+              {/* Simplified Package Card */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold ${getPackageGradient(pkg.type)}`}>
                     {String.fromCharCode(65 + index)}
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-semibold text-brand-text">{pkg.name}</h3>
-                    <p className="text-brand-mute text-sm">{pkg.description}</p>
+                    <p className="text-brand-mute text-xs mt-1">{pkg.destination || pkg.route}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-brand-accent">{pkg.budget}</p>
+                  <p className="font-bold text-brand-accent text-lg">{pkg.budget}</p>
                   <p className="text-brand-mute text-xs">{pkg.days} days</p>
                 </div>
               </div>
               
-              <div className="flex items-center space-x-4 text-xs text-brand-mute mb-3">
-                <span className="flex items-center">
+              {/* Compact Metrics as Tags */}
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   <MapPin className="w-3 h-3 mr-1" />
-                  {pkg.route}
-                </span>
-                <span className="flex items-center">
+                  {pkg.attractionCount} spots
+                </Badge>
+                <Badge variant="secondary" className="text-xs px-2 py-0.5">
                   <Utensils className="w-3 h-3 mr-1" />
-                  {pkg.diningCount} dining experiences
-                </span>
-                <span className="flex items-center">
-                  {getPackageIcon(pkg.type)}
-                  <span className="ml-1">{pkg.attractionCount} attractions</span>
-                </span>
+                  {pkg.diningCount} meals
+                </Badge>
               </div>
 
-              {/* Highlights */}
-              <div className="flex flex-wrap gap-2 mb-3">
+              {/* Key Highlights Only */}
+              <div className="flex flex-wrap gap-1.5">
                 {pkg.highlights?.slice(0, 3).map((highlight: string, idx: number) => (
                   <Badge
                     key={idx}
                     variant="outline"
-                    className="bg-brand-accent/10 text-brand-accent border-brand-accent/30 text-xs"
+                    className="bg-brand-accent/10 text-brand-accent border-brand-accent/30 text-xs px-2 py-0.5"
                   >
                     {highlight}
                   </Badge>
                 ))}
+                {pkg.highlights && pkg.highlights.length > 3 && (
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 border-brand-border text-brand-mute">
+                    +{pkg.highlights.length - 3} more
+                  </Badge>
+                )}
               </div>
-
-              {/* Day-by-day preview */}
-              {pkg.itinerary && pkg.itinerary.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-brand-border/50">
-                  <h4 className="text-sm font-medium text-brand-text mb-2">Day-by-day Preview:</h4>
-                  <div className="space-y-2">
-                    {pkg.itinerary.slice(0, 2).map((day: any, dayIdx: number) => (
-                      <div key={dayIdx} className="bg-brand-bg/20 rounded-lg p-2">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="text-xs font-medium text-brand-text">Day {day.day}</h5>
-                          <span className="text-xs text-brand-mute">{day.location}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {day.activities?.slice(0, 3).map((activity: string, actIdx: number) => (
-                            <div key={actIdx} className="flex items-center text-xs text-brand-mute">
-                              <div className="w-1 h-1 bg-brand-accent rounded-full mr-2"></div>
-                              {activity}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                    {pkg.itinerary.length > 2 && (
-                      <div className="text-center">
-                        <span className="text-xs text-brand-mute">+{pkg.itinerary.length - 2} more days</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -221,7 +194,7 @@ export function PackagePreview({
           onClick={onViewAllPackages}
           className="w-full bg-brand-accent text-brand-bg py-3 font-semibold hover:bg-yellow-500"
         >
-          Compare All Packages
+          View All Packages
         </Button>
       </CardContent>
     </Card>
