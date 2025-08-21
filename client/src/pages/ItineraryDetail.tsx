@@ -457,12 +457,19 @@ export function ItineraryDetail() {
                                             snapshot.isDragging ? 'shadow-lg opacity-90' : ''
                                           }`}
                                         >
-                                          <div className="flex items-start gap-2">
+                                          <div className="flex items-stretch">
+                                            {/* Enlarged drag handle area */}
                                             <div
                                               {...provided.dragHandleProps}
-                                              className="mt-3 cursor-move opacity-40 hover:opacity-100 transition-opacity"
+                                              className="flex items-center justify-center w-10 md:w-12 cursor-move bg-gray-50 hover:bg-gray-100 active:bg-gray-200 transition-colors rounded-l-lg mr-2 touch-none"
+                                              title="Drag to reorder"
+                                              style={{ minHeight: '100%' }}
                                             >
-                                              <GripVertical className="w-4 h-4 text-gray-500" />
+                                              <div className="flex flex-col items-center gap-0.5">
+                                                <GripVertical className="w-5 h-5 text-gray-400" />
+                                                <div className="w-4 h-0.5 bg-gray-300 rounded-full md:hidden" />
+                                                <div className="w-4 h-0.5 bg-gray-300 rounded-full md:hidden" />
+                                              </div>
                                             </div>
                                             <div className="flex-1">
                                               <POICard 
