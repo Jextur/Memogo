@@ -28,6 +28,15 @@ A conversational AI travel planning platform that creates personalized travel pa
 - Security: Input validation, content filtering, rate limiting, no auto-persistence of user text
 
 ## Recent Changes
+- 2025-01-27: **Chat Interface UX Improvements (Mobile-First):**
+  - Fixed input field to appear immediately on tap/focus without requiring first character
+  - Prevented tag selection overlay from being covered by input area on mobile
+  - Moved selected tags closer to "Continue" button for better visual flow
+  - Enhanced selected tag visual feedback with purple background, white text, and ring effect
+  - Added persistent highlighting and checkmarks for selected tags
+  - Improved mobile layout with proper z-index stacking and spacing
+  - Selected tags now appear in dedicated section right above action buttons
+  - Stronger visual distinction between selected and available tags
 - 2025-01-27: **Intelligent Itinerary Generation with Realistic Duration Estimates:**
   - Implemented AI-powered itinerary builder that considers actual visit durations
   - Added duration estimation based on POI types (theme parks: 8hrs, museums: 2-3hrs, etc.)
