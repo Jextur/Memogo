@@ -37,7 +37,7 @@ export async function searchPlaces(query: string, filters?: PlaceFilterOptions):
       },
       body: JSON.stringify({ 
         textQuery: query, 
-        pageSize: 20, // Get more results to filter
+        pageSize: 20, // Maximum allowed by Google Places API
         languageCode: "en"
       })
     });
@@ -102,7 +102,8 @@ export async function searchPlaces(query: string, filters?: PlaceFilterOptions):
     });
     
     // Return top 10 results
-    return results.slice(0, 10);
+    // Return more results for longer trips - don't limit to just 10
+    return results;
   } catch (error) {
     console.error("Google Places search error:", error);
     throw new Error("Failed to search places");
