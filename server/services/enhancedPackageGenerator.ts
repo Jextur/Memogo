@@ -169,49 +169,41 @@ function buildDayItinerary(
   generalPOIs: POIWithReason[],
   restaurants: POIWithReason[],
   selectedTags: string[],
-  globalUsedPlaceIds: Set<string>  // Track POIs used across all days
+  globalUsedPlaceIds: Set<string>,  // Track POIs used across all days
+  totalDays: number  // Add total days to properly distribute
 ): DayItinerary {
   const poisForDay: POIWithReason[] = [];
+  const TARGET_ACTIVITIES_PER_DAY = 5; // Consistent target for all days
   
-  // Distribute tag POIs across days to ensure each tag appears at least once
-  // but don't repeat POIs that have been used on previous days
-  const tagPOIsPerDay = Math.max(1, Math.ceil(tagPOIs.length / 3)); // Distribute evenly across days
-  const startIdx = (dayNum - 1) * tagPOIsPerDay;
-  const endIdx = Math.min(startIdx + tagPOIsPerDay, tagPOIs.length);
+  // Distribute tag POIs evenly across ALL days
+  const availableTagPOIs = tagPOIs.filter(poi => !globalUsedPlaceIds.has(poi.placeId));
+  const tagPOIsPerDay = Math.ceil(availableTagPOIs.length / (totalDays - dayNum + 1));
   
-  // Add tag-related POIs for this day (1-2 per day)
-  for (let i = startIdx; i < endIdx && poisForDay.length < 2; i++) {
-    const poi = tagPOIs[i];
-    if (poi && !globalUsedPlaceIds.has(poi.placeId)) {
+  // Add 1-2 tag POIs for this day
+  let tagCount = 0;
+  for (const poi of availableTagPOIs) {
+    if (tagCount >= Math.min(2, tagPOIsPerDay)) break;
+    if (!globalUsedPlaceIds.has(poi.placeId)) {
       poisForDay.push(poi);
       globalUsedPlaceIds.add(poi.placeId);
+      tagCount++;
     }
   }
   
-  // If we couldn't add tag POIs for this day (all used), try remaining tag POIs
-  if (poisForDay.length === 0 && tagPOIs.length > 0) {
-    for (const poi of tagPOIs) {
-      if (!globalUsedPlaceIds.has(poi.placeId)) {
-        poisForDay.push(poi);
-        globalUsedPlaceIds.add(poi.placeId);
-        if (poisForDay.length >= 2) break;
-      }
-    }
-  }
+  // Calculate how many general POIs we need
+  const generalNeeded = TARGET_ACTIVITIES_PER_DAY - poisForDay.length - 1; // -1 for restaurant
   
-  // Add general attractions to fill the day (aim for 4-5 activities)
-  const remainingSlots = 5 - poisForDay.length;
+  // Get unused general POIs
+  const availableGeneralPOIs = generalPOIs.filter(poi => !globalUsedPlaceIds.has(poi.placeId));
+  
+  // Use different starting points for variety, but ensure we have enough POIs
+  const chunkSize = Math.max(5, Math.ceil(availableGeneralPOIs.length / totalDays));
+  const startIdx = Math.min((dayNum - 1) * chunkSize, Math.max(0, availableGeneralPOIs.length - generalNeeded));
+  
+  // Add general attractions
   let addedGeneral = 0;
-  
-  // Start from different indices for each day to ensure variety
-  const generalStartIdx = (dayNum - 1) * 3;
-  const rotatedGeneralPOIs = [
-    ...generalPOIs.slice(generalStartIdx),
-    ...generalPOIs.slice(0, generalStartIdx)
-  ];
-  
-  for (const poi of rotatedGeneralPOIs) {
-    if (addedGeneral >= remainingSlots) break;
+  for (let i = startIdx; i < availableGeneralPOIs.length && addedGeneral < generalNeeded; i++) {
+    const poi = availableGeneralPOIs[i];
     if (!globalUsedPlaceIds.has(poi.placeId)) {
       poisForDay.push(poi);
       globalUsedPlaceIds.add(poi.placeId);
@@ -219,20 +211,27 @@ function buildDayItinerary(
     }
   }
   
-  // Add at least one restaurant (different for each day)
-  const restaurantIdx = (dayNum - 1) % restaurants.length;
-  const restaurant = restaurants[restaurantIdx];
-  if (restaurant && !globalUsedPlaceIds.has(restaurant.placeId)) {
-    poisForDay.push(restaurant);
-    globalUsedPlaceIds.add(restaurant.placeId);
-  } else {
-    // Try to find any unused restaurant
-    for (const r of restaurants) {
-      if (!globalUsedPlaceIds.has(r.placeId)) {
-        poisForDay.push(r);
-        globalUsedPlaceIds.add(r.placeId);
-        break;
+  // If we still need more, look from the beginning
+  if (addedGeneral < generalNeeded) {
+    for (let i = 0; i < startIdx && addedGeneral < generalNeeded; i++) {
+      const poi = availableGeneralPOIs[i];
+      if (!globalUsedPlaceIds.has(poi.placeId)) {
+        poisForDay.push(poi);
+        globalUsedPlaceIds.add(poi.placeId);
+        addedGeneral++;
       }
+    }
+  }
+  
+  // Add a restaurant for dining
+  const availableRestaurants = restaurants.filter(r => !globalUsedPlaceIds.has(r.placeId));
+  if (availableRestaurants.length > 0) {
+    // Try to pick different restaurants for each day
+    const restaurantIdx = (dayNum - 1) % availableRestaurants.length;
+    const restaurant = availableRestaurants[restaurantIdx] || availableRestaurants[0];
+    if (restaurant) {
+      poisForDay.push(restaurant);
+      globalUsedPlaceIds.add(restaurant.placeId);
     }
   }
   
@@ -244,8 +243,23 @@ function buildDayItinerary(
     ? `featuring ${tagPOIsInDay.map(p => p.reason.split('"')[1]).filter(Boolean).join(' & ')}`
     : 'exploring top attractions';
   
+  // Ensure minimum activities per day (fill with any available POIs if needed)
+  if (poisForDay.length < 4) {
+    console.warn(`Day ${dayNum} only has ${poisForDay.length} activities. Attempting to add more...`);
+    
+    // Try to add any unused POIs from all sources
+    const allAvailable = [...tagPOIs, ...generalPOIs, ...restaurants]
+      .filter(poi => !globalUsedPlaceIds.has(poi.placeId));
+    
+    for (const poi of allAvailable) {
+      if (poisForDay.length >= 4) break;
+      poisForDay.push(poi);
+      globalUsedPlaceIds.add(poi.placeId);
+    }
+  }
+  
   // Log for debugging
-  console.log(`Day ${dayNum} POIs:`, poisForDay.map(p => ({ 
+  console.log(`Day ${dayNum} POIs (${poisForDay.length} total):`, poisForDay.map(p => ({ 
     name: p.name, 
     placeId: p.placeId,
     source: p.reason.includes('Selected for') ? 'tag' : 'discovery'
@@ -274,16 +288,20 @@ export async function generateEnhancedTravelPackages(
   
   const selectedTags = request.selectedTags || [];
   
-  // Fetch POIs for each selected tag
+  // Fetch POIs for each selected tag - get more for longer trips
   const tagPOIsPromises = selectedTags.map(tag => 
-    searchPOIsForTag(tag, request.destination, Math.max(3, Math.ceil(request.days / 2)))
+    searchPOIsForTag(tag, request.destination, Math.max(5, request.days))
   );
+  
+  // Fetch more POIs to ensure we have enough for all days (at least 5-6 per day)
+  const attractionsNeeded = Math.max(20, request.days * 6);
+  const restaurantsNeeded = Math.max(10, request.days * 2);
   
   // Fetch general attractions and restaurants
   const [tagPOIsArrays, topAttractions, restaurants, hotels] = await Promise.all([
     Promise.all(tagPOIsPromises),
-    getTopAttractions(request.destination, request.days * 3),
-    getRestaurants(request.destination, request.days * 2),
+    getTopAttractions(request.destination, attractionsNeeded),
+    getRestaurants(request.destination, restaurantsNeeded),
     searchPlaces(`hotels in ${request.destination}`, { minRating: 4.0 })
   ]);
   
@@ -312,7 +330,8 @@ export async function generateEnhancedTravelPackages(
       topAttractions,
       restaurants,
       selectedTags,
-      globalUsedPlaceIds  // Pass the global tracking set
+      globalUsedPlaceIds,  // Pass the global tracking set
+      request.days  // Pass total days for better distribution
     ));
   }
   
