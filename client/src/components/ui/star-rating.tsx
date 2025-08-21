@@ -5,6 +5,7 @@ interface StarRatingProps {
   rating: number;
   maxRating?: number;
   showNumber?: boolean;
+  reviewCount?: number;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -13,6 +14,7 @@ export function StarRating({
   rating, 
   maxRating = 5, 
   showNumber = true,
+  reviewCount,
   size = 'md',
   className = ''
 }: StarRatingProps) {
@@ -27,10 +29,21 @@ export function StarRating({
   };
 
   const starSize = sizeClasses[size];
+  
+  const formatReviewCount = (count: number): string => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    }
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return count.toLocaleString();
+  };
 
   return (
-    <div className={`flex items-center ${className}`}>
-      <div className="flex items-center mr-1">
+    <div className={`inline-flex items-center ${className}`}>
+      {/* Stars */}
+      <div className="flex items-center">
         {/* Full stars */}
         {Array.from({ length: fullStars }).map((_, i) => (
           <Star 
@@ -58,9 +71,17 @@ export function StarRating({
         ))}
       </div>
       
+      {/* Rating number */}
       {showNumber && (
-        <span className="text-sm font-medium text-gray-700">
-          {rating.toFixed(1)} / {maxRating}
+        <span className="text-base font-medium text-gray-700 ml-1.5">
+          {rating.toFixed(1)}/{maxRating}
+        </span>
+      )}
+      
+      {/* Review count - always visible when provided */}
+      {reviewCount !== undefined && reviewCount > 0 && (
+        <span className="text-xs text-gray-400 ml-2">
+          ({formatReviewCount(reviewCount)} reviews)
         </span>
       )}
     </div>
