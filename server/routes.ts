@@ -147,12 +147,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use enhanced package generator if tags are selected
       const { generateEnhancedTravelPackages } = await import('./services/enhancedPackageGenerator');
       
+      // Extract free-text preferences from the conversation
+      const freeTextPreferences: string[] = [];
+      
+      // Look for theme preferences in messages (e.g., "play water", "food", "temples")
+      if (conversation.messages && Array.isArray(conversation.messages)) {
+        for (const msg of conversation.messages) {
+          if (msg.role === 'user' && msg.content) {
+            const content = msg.content.toLowerCase();
+            
+            // Skip tag selector messages
+            if (content.includes("i'm interested in:")) continue;
+            
+            // Extract preferences from theme-related messages
+            if (content.includes('water') || content.includes('aqua') || content.includes('swim') || 
+                content.includes('beach') || content.includes('onsen') || content.includes('hot spring')) {
+              freeTextPreferences.push('water activities');
+            }
+            if (content.includes('food') || content.includes('eat') || content.includes('cuisine') ||
+                content.includes('restaurant') || content.includes('local food')) {
+              freeTextPreferences.push('local food');
+            }
+            if (content.includes('temple') || content.includes('shrine') || content.includes('culture') ||
+                content.includes('history') || content.includes('museum')) {
+              freeTextPreferences.push('cultural sites');
+            }
+            if (content.includes('shop') || content.includes('market') || content.includes('mall')) {
+              freeTextPreferences.push('shopping');
+            }
+            if (content.includes('nature') || content.includes('park') || content.includes('garden') ||
+                content.includes('mountain') || content.includes('hike')) {
+              freeTextPreferences.push('nature');
+            }
+            if (content.includes('night') || content.includes('bar') || content.includes('club') ||
+                content.includes('party')) {
+              freeTextPreferences.push('nightlife');
+            }
+          }
+        }
+      }
+      
+      // Also extract from theme field if it's not just tag names
+      if (conversation.theme && !conversation.theme.includes(',')) {
+        const theme = conversation.theme.toLowerCase();
+        if (theme.includes('water') || theme.includes('play water')) {
+          freeTextPreferences.push('water activities');
+        }
+        if (theme.includes('food') || theme.includes('foodie')) {
+          freeTextPreferences.push('local food');
+        }
+      }
+      
       const packages = await generateEnhancedTravelPackages({
         destination: conversation.destination,
         days: conversation.days,
         people: conversation.people || 1,
         theme: conversation.theme,
-        selectedTags: conversation.selectedTags || []
+        selectedTags: conversation.selectedTags || [],
+        freeTextPreferences: Array.from(new Set(freeTextPreferences)) // Remove duplicates
       });
       
       // Save packages to storage

@@ -21,6 +21,7 @@ interface DayItinerary {
 
 interface EnhancedPackageGenerationRequest extends PackageGenerationRequest {
   selectedTags?: string[];
+  freeTextPreferences?: string[];
 }
 
 // Map tags to Google Places search queries
@@ -34,6 +35,13 @@ function getSearchQueryForTag(tag: string, destination: string): string {
     'michelin': 'michelin star restaurants',
     'coffee': 'specialty coffee shops',
     'bakery': 'artisan bakeries',
+    
+    // Water activities (from free-text)
+    'water activities': 'water parks onsen hot springs beaches swimming pools aquariums',
+    'play water': 'water parks beaches swimming pools water sports',
+    'onsen': 'hot springs onsen spa',
+    'beach': 'beaches seaside water sports',
+    'aquarium': 'aquariums marine life exhibits',
     
     // Landmarks & Attractions
     'tokyo tower': 'Tokyo Tower observation deck',
@@ -57,19 +65,20 @@ function getSearchQueryForTag(tag: string, destination: string): string {
     'nightlife': 'bars nightclubs',
     'jazz': 'jazz bars clubs',
     'broadway': 'broadway theaters shows',
-    'beach': 'beaches seaside',
     'spa': 'spa wellness centers',
-    'onsen': 'hot springs onsen',
     
     // Generic interests
     'must-see highlights': 'top tourist attractions',
     'local food & culture': 'authentic local restaurants cultural sites',
+    'local food': 'authentic local restaurants food markets street food',
+    'cultural sites': 'temples shrines museums historical sites',
     'hidden gems': 'off the beaten path attractions',
     'adventure': 'outdoor activities adventure sports',
     'family friendly': 'family attractions kids activities',
     'romantic': 'romantic restaurants couples activities',
     'budget': 'free attractions budget restaurants',
-    'luxury': 'luxury hotels fine dining'
+    'luxury': 'luxury hotels fine dining',
+    'nature': 'parks gardens mountains hiking trails nature reserves'
   };
 
   const lowerTag = tag.toLowerCase();
@@ -168,7 +177,7 @@ function buildDayItinerary(
   tagPOIs: POIWithReason[],
   generalPOIs: POIWithReason[],
   restaurants: POIWithReason[],
-  selectedTags: string[],
+  allPreferences: string[],  // Changed from selectedTags to allPreferences
   globalUsedPlaceIds: Set<string>,  // Track POIs used across all days
   totalDays: number  // Add total days to properly distribute
 ): DayItinerary {
@@ -284,12 +293,17 @@ export async function generateEnhancedTravelPackages(
   console.log('People:', request.people);
   console.log('Theme:', request.theme);
   console.log('Selected tags:', request.selectedTags);
+  console.log('Free-text preferences:', request.freeTextPreferences);
   console.log('Number of tags:', request.selectedTags?.length || 0);
+  console.log('Number of free-text preferences:', request.freeTextPreferences?.length || 0);
   
+  // Merge selected tags with free-text preferences
   const selectedTags = request.selectedTags || [];
+  const freeTextPreferences = request.freeTextPreferences || [];
+  const allPreferences = [...selectedTags, ...freeTextPreferences];
   
-  // Fetch POIs for each selected tag - get more for longer trips
-  const tagPOIsPromises = selectedTags.map(tag => 
+  // Fetch POIs for all preferences (selected tags + free-text) - get more for longer trips
+  const tagPOIsPromises = allPreferences.map(tag => 
     searchPOIsForTag(tag, request.destination, Math.max(5, request.days))
   );
   
@@ -375,7 +389,7 @@ export async function generateEnhancedTravelPackages(
       allTagPOIs,
       allGeneralAttractions,
       allDiningOptions,
-      selectedTags,
+      allPreferences,  // Pass all preferences (tags + free-text)
       globalUsedPlaceIds,  // Pass the global tracking set
       request.days  // Pass total days for better distribution
     ));
@@ -390,9 +404,9 @@ export async function generateEnhancedTravelPackages(
     }
   });
   
-  const missingTags = selectedTags.filter(tag => !tagsCovered.has(tag));
+  const missingTags = allPreferences.filter(tag => !tagsCovered.has(tag));
   if (missingTags.length > 0) {
-    console.warn('Warning: Could not find POIs for tags:', missingTags);
+    console.warn('Warning: Could not find POIs for preferences:', missingTags);
   }
   
   // Generate three package variations
@@ -401,7 +415,7 @@ export async function generateEnhancedTravelPackages(
       name: `Personalized ${request.destination} Experience`,
       type: 'classic' as const,
       budget: `$${1000 + (request.days * 200)}`,
-      description: `Tailored to your interests: ${selectedTags.join(', ')}. Includes ${allTagPOIs.length} hand-picked venues matching your preferences plus must-see highlights.`,
+      description: `Tailored to your interests: ${allPreferences.join(', ')}. Includes ${allTagPOIs.length} hand-picked venues matching your preferences plus must-see highlights.`,
       route: request.destination,
       accommodation: hotels[0]?.name || 'Recommended hotel',
       diningCount: allDiningOptions.length,
