@@ -8,6 +8,7 @@ import { Star } from "lucide-react";
 import { usePackageStore } from "@/lib/packageStore";
 import { POICard } from "@/components/itinerary/POICard";
 import { AddPOIModal } from "@/components/modals/AddPOIModal";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import {
   ArrowLeft,
   MapPin,
@@ -22,7 +23,8 @@ import {
   Sun,
   Moon,
   Plus,
-  Search
+  Search,
+  GripVertical
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -76,7 +78,20 @@ export function ItineraryDetail() {
   }
 
   const pkg = packageDetails;
-  const [itinerary, setItinerary] = useState<any[]>(pkg?.itinerary || []);
+  
+  // Initialize itinerary with IDs for all POIs
+  const initializeItinerary = (originalItinerary: any[]) => {
+    return originalItinerary?.map((day: any) => ({
+      ...day,
+      pois: day.pois?.map((poi: any) => ({
+        ...poi,
+        id: poi.id || `poi-${Date.now()}-${Math.random()}`,
+        time: poi.time || poi.timeLabel?.toLowerCase() || 'morning'
+      }))
+    })) || [];
+  };
+  
+  const [itinerary, setItinerary] = useState<any[]>(initializeItinerary(pkg?.itinerary));
 
   // Handler for adding POI to itinerary
   const handleAddPOI = (poi: POI, timeSlot: string) => {
@@ -142,6 +157,22 @@ export function ItineraryDetail() {
         });
       }
     }
+    
+    setItinerary(newItinerary);
+  };
+
+  // Handler for drag and drop
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const dayIndex = parseInt(result.destination.droppableId.split('-')[1]);
+    const newItinerary = [...itinerary];
+    const day = newItinerary[dayIndex];
+    
+    if (!day.pois) return;
+    
+    const [reorderedItem] = day.pois.splice(result.source.index, 1);
+    day.pois.splice(result.destination.index, 0, reorderedItem);
     
     setItinerary(newItinerary);
   };
@@ -275,22 +306,17 @@ export function ItineraryDetail() {
                       Day {day.day} — {day.location || day.title || `Exploring ${pkg.destination}`}
                     </h3>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs md:text-sm text-gray-600">
-                      {day.pois?.length || day.activities?.length || 0} activities
-                    </span>
-                    <Button
-                      onClick={() => {
-                        setSelectedDayIndex(index);
-                        setIsAddPOIModalOpen(true);
-                      }}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      <Plus className="w-3 h-3 mr-1" />
-                      Add POI
-                    </Button>
-                  </div>
+                  <Button
+                    onClick={() => {
+                      setSelectedDayIndex(index);
+                      setIsAddPOIModalOpen(true);
+                    }}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add POI
+                  </Button>
                 </div>
               </div>
               
@@ -352,9 +378,15 @@ export function ItineraryDetail() {
                       if (untimedPois.length === 0) return null;
                       
                       return (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {untimedPois.map((poi: any, poiIndex: number) => (
-                            <POICard key={`untimed-${poiIndex}`} {...poi} />
+                            <div key={`untimed-${poiIndex}`} className="relative group">
+                              <POICard 
+                                {...poi} 
+                                onDelete={poi.id ? () => handleDeletePOI(index, poi.id) : undefined}
+                                onTimeChange={poi.id ? (newTime: string) => handleUpdatePOITime(index, poi.id, newTime) : undefined}
+                              />
+                            </div>
                           ))}
                         </div>
                       );
