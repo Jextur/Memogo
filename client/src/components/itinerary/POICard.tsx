@@ -58,21 +58,68 @@ export function POICard({
   // Get review count from various possible fields
   const totalReviews = reviewCount || reviewsCount || user_ratings_total || 0;
   
-  // Format duration
+  // Determine category with proper capitalization
+  const displayCategory = category || type || 'Attraction';
+  
+  // Ensure category is properly formatted (capitalize first letter if needed)
+  const formattedCategory = displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1);
+  
+  // Format duration with more intelligent display
   let formattedDuration = duration;
   if (!formattedDuration) {
     if (durationHours) {
-      formattedDuration = `~${durationHours} hour${durationHours > 1 ? 's' : ''}`;
+      // Handle decimal hours (e.g., 1.5 hours)
+      if (durationHours % 1 !== 0) {
+        const hours = Math.floor(durationHours);
+        const minutes = Math.round((durationHours % 1) * 60);
+        if (hours === 0) {
+          formattedDuration = `${minutes} mins`;
+        } else if (minutes === 0) {
+          formattedDuration = `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+          formattedDuration = `${hours}h ${minutes}m`;
+        }
+      } else {
+        formattedDuration = `${durationHours} hour${durationHours !== 1 ? 's' : ''}`;
+      }
     } else if (durationMinutes) {
-      const hours = Math.round(durationMinutes / 60);
-      formattedDuration = hours > 0 ? `~${hours} hour${hours > 1 ? 's' : ''}` : `~${durationMinutes} mins`;
+      if (durationMinutes >= 60) {
+        const hours = Math.floor(durationMinutes / 60);
+        const mins = durationMinutes % 60;
+        if (mins === 0) {
+          formattedDuration = `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+          formattedDuration = `${hours}h ${mins}m`;
+        }
+      } else {
+        formattedDuration = `${durationMinutes} mins`;
+      }
     } else {
-      formattedDuration = '~2 hours';
+      // Intelligent fallback based on category
+      const categoryDurations: Record<string, string> = {
+        'Restaurant': '1-2 hours',
+        'Fine Dining': '2-3 hours',
+        'Fast Food': '30 mins',
+        'Cafe': '1 hour',
+        'Coffee Shop': '45 mins',
+        'Bar': '2 hours',
+        'Museum': '2-3 hours',
+        'Art Gallery': '2 hours',
+        'Park': '2 hours',
+        'Beach': '3-4 hours',
+        'Shopping Mall': '2-3 hours',
+        'Market': '1-2 hours',
+        'Temple': '1 hour',
+        'Church': '45 mins',
+        'Viewpoint': '30 mins',
+        'Theme Park': 'Full day',
+        'Amusement Park': 'Full day',
+        'Zoo': '4-5 hours',
+        'Aquarium': '2-3 hours'
+      };
+      formattedDuration = categoryDurations[displayCategory] || '1-2 hours';
     }
   }
-  
-  // Determine category
-  const displayCategory = category || type || 'Attraction';
   
   // Truncate description
   const truncatedDescription = description && description.length > 120
@@ -170,7 +217,7 @@ export function POICard({
             <Badge 
               className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full bg-purple-600 text-white border-0 font-medium"
             >
-              {displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1)}
+              {formattedCategory}
             </Badge>
             <Badge 
               className="text-[10px] md:text-xs px-2 md:px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700 border-0"

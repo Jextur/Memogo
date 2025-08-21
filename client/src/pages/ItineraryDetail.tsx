@@ -120,7 +120,8 @@ export function ItineraryDetail() {
                   rating: rating ? parseFloat(rating) : 4.5,
                   reviewCount: reviews ? parseInt(reviews.replace(/,/g, '')) : 1000,
                   category: 'Attraction',
-                  duration: '~2 hours'
+                  duration: null,
+                  durationHours: 2
                 };
                 break;
               }
@@ -133,7 +134,8 @@ export function ItineraryDetail() {
                 rating: 4.5,
                 reviewCount: 1000,
                 category: 'Attraction',
-                duration: '~2 hours'
+                duration: null,
+                durationHours: 2
               }),
               id: `poi-${dayIndex}-${actIndex}-${Date.now()}`,
               time: timeSlot,
