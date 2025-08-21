@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { StarRating } from "@/components/ui/star-rating";
 import { refinePackage, exportPackage } from "@/lib/api";
 import { ArrowLeft, Edit, Plus, X, Sun, Sunset, Moon, Star, MapPin, Clock, Utensils, Loader2, Sparkles, ExternalLink, Map } from "lucide-react";
 
@@ -68,14 +69,30 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
   const getActivityTypeColor = (type: string) => {
     switch (type) {
       case "restaurant":
-        return "bg-red-500/20 text-red-400";
+      case "food":
+        return "bg-red-500/10 text-red-600 border-red-200";
       case "attraction":
-        return "bg-blue-500/20 text-blue-400";
+        return "bg-blue-500/10 text-blue-600 border-blue-200";
       case "accommodation":
-        return "bg-brand-accent/20 text-brand-accent";
+        return "bg-purple-500/10 text-purple-600 border-purple-200";
+      case "nature":
+        return "bg-green-500/10 text-green-600 border-green-200";
+      case "shopping":
+        return "bg-pink-500/10 text-pink-600 border-pink-200";
+      case "culture":
+        return "bg-indigo-500/10 text-indigo-600 border-indigo-200";
+      case "nightlife":
+        return "bg-orange-500/10 text-orange-600 border-orange-200";
       default:
-        return "bg-gray-500/20 text-gray-400";
+        return "bg-gray-500/10 text-gray-600 border-gray-200";
     }
+  };
+  
+  const formatReviewCount = (count: number): string => {
+    if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}k`;
+    }
+    return count.toLocaleString();
   };
 
   const handleRefinement = () => {
@@ -249,15 +266,57 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                       const timeSlot = timeInfo.slot;
                       const timeLabel = timeInfo.label;
                       
-                      // Determine activity type based on keywords
+                      // Parse activity information
+                      let activityRating = null;
+                      let activityReviews = null;
+                      let activityCategory = null;
+                      
+                      // Extract rating and reviews from activity string if present
+                      const ratingMatch = activityName.match(/rated (\d+\.?\d*)★/);
+                      if (ratingMatch) {
+                        activityRating = parseFloat(ratingMatch[1]);
+                      }
+                      
+                      const reviewMatch = activityName.match(/\((\d+) reviews?\)/);
+                      if (reviewMatch) {
+                        activityReviews = parseInt(reviewMatch[1]);
+                      }
+                      
+                      // Clean activity name (remove rating/review info)
+                      const cleanActivityName = activityName
+                        .replace(/\s*-\s*.*$/, '') // Remove everything after dash
+                        .trim();
+                      
+                      // Determine activity type and category based on keywords
                       let activityType = "attraction";
                       const activityLower = activityName.toLowerCase();
+                      
                       if (activityLower.includes("restaurant") || activityLower.includes("cafe") || 
                           activityLower.includes("table") || activityLower.includes("kitchen") ||
-                          activityLower.includes("dining")) {
-                        activityType = "restaurant";
-                      } else if (activityLower.includes("hotel") || activityLower.includes("palace")) {
+                          activityLower.includes("dining") || activityLower.includes("food")) {
+                        activityType = "food";
+                      } else if (activityLower.includes("hotel") || activityLower.includes("palace") ||
+                                 activityLower.includes("accommodation")) {
                         activityType = "accommodation";
+                      } else if (activityLower.includes("temple") || activityLower.includes("shrine") ||
+                                 activityLower.includes("museum") || activityLower.includes("cultural")) {
+                        activityType = "culture";
+                      } else if (activityLower.includes("park") || activityLower.includes("garden") ||
+                                 activityLower.includes("nature") || activityLower.includes("beach")) {
+                        activityType = "nature";
+                      } else if (activityLower.includes("shop") || activityLower.includes("market") ||
+                                 activityLower.includes("mall")) {
+                        activityType = "shopping";
+                      } else if (activityLower.includes("bar") || activityLower.includes("club") ||
+                                 activityLower.includes("night")) {
+                        activityType = "nightlife";
+                      }
+                      
+                      // If activity is an object, use its properties
+                      if (typeof activity === 'object') {
+                        activityRating = activity.rating || activityRating;
+                        activityReviews = activity.userRatingsTotal || activity.reviewCount || activityReviews;
+                        activityCategory = activity.category || activityType;
                       }
                       
                       return (
@@ -291,18 +350,19 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                 
                                 <div className="flex items-start space-x-3">
                                   <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-                                    {activityType === "restaurant" ? (
-                                      <Utensils className="w-6 h-6 text-gray-400" />
+                                    {activityType === "food" ? (
+                                      <Utensils className="w-6 h-6 text-red-400" />
                                     ) : activityType === "accommodation" ? (
-                                      <Star className="w-6 h-6 text-gray-400" />
+                                      <Star className="w-6 h-6 text-purple-400" />
                                     ) : (
-                                      <MapPin className="w-6 h-6 text-gray-400" />
+                                      <MapPin className="w-6 h-6 text-blue-400" />
                                     )}
                                   </div>
                                   
                                   <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-1">
-                                      <h5 className="font-medium text-brand-text">{activityName}</h5>
+                                    {/* Title and Map Link */}
+                                    <div className="flex items-center justify-between mb-2">
+                                      <h5 className="font-bold text-lg text-brand-text">{cleanActivityName}</h5>
                                       {/* Google Maps Link */}
                                       {typeof activity === 'object' && activity.placeId && (
                                         <a
@@ -316,39 +376,78 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                         </a>
                                       )}
                                     </div>
-                                    {/* Add description for POI */}
-                                    <p className="text-brand-mute text-sm mb-2">
-                                      {typeof activity === 'object' && activity.description ? 
-                                        activity.description : 
-                                        (activityType === "restaurant" ? "Experience local cuisine at this popular dining spot" : 
-                                         activityType === "accommodation" ? "Comfortable lodging with excellent amenities" : 
-                                         "Must-visit attraction showcasing local culture and heritage")}
-                                    </p>
-                                    {/* Show rating if available */}
-                                    {typeof activity === 'object' && activity.rating && (
-                                      <div className="flex items-center space-x-1 mb-2">
-                                        <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                                        <span className="text-xs text-brand-text">{activity.rating}</span>
-                                        {activity.userRatingsTotal && (
-                                          <span className="text-xs text-brand-mute">({activity.userRatingsTotal} reviews)</span>
+                                    
+                                    {/* Rating and Reviews */}
+                                    {activityRating && (
+                                      <div className="flex items-center space-x-3 mb-3">
+                                        <StarRating 
+                                          rating={activityRating} 
+                                          size="md"
+                                          showNumber={true}
+                                        />
+                                        {activityReviews && (
+                                          <span className="text-sm text-gray-400">
+                                            ({formatReviewCount(activityReviews)} reviews)
+                                          </span>
                                         )}
                                       </div>
                                     )}
-                                    <div className="flex items-center space-x-2 mt-2">
+                                    
+                                    {/* Category Tags */}
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                      {/* Main category tag */}
                                       <Badge
-                                        variant="outline"
-                                        className={`text-xs ${getActivityTypeColor(activityType)}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-full border ${getActivityTypeColor(activityType)}`}
                                       >
-                                        {activityType}
+                                        {activityType.charAt(0).toUpperCase() + activityType.slice(1)}
                                       </Badge>
-                                      <span className="text-xs text-brand-mute">
+                                      
+                                      {/* Additional tags based on description */}
+                                      {typeof activity === 'object' && activity.description && (
+                                        <>
+                                          {activity.description.toLowerCase().includes('highly-rated') && (
+                                            <Badge className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-500/10 text-yellow-600 border border-yellow-200">
+                                              Highly Rated
+                                            </Badge>
+                                          )}
+                                          {activity.description.toLowerCase().includes('must-see') && (
+                                            <Badge className="px-3 py-1 text-xs font-medium rounded-full bg-purple-500/10 text-purple-600 border border-purple-200">
+                                              Must-See
+                                            </Badge>
+                                          )}
+                                          {activity.description.toLowerCase().includes('cultural') && (
+                                            <Badge className="px-3 py-1 text-xs font-medium rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-200">
+                                              Cultural
+                                            </Badge>
+                                          )}
+                                        </>
+                                      )}
+                                      
+                                      {/* Duration tag */}
+                                      <Badge className="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 border border-gray-200">
                                         {timeSlot === "morning" ? "~2 hours" : 
                                          timeSlot === "afternoon" ? "~3 hours" : "~2 hours"}
-                                      </span>
-                                      {/* Fallback Google Maps search link if no place_id */}
-                                      {(typeof activity !== 'object' || !activity.placeId) && (
+                                      </Badge>
+                                    </div>
+                                    
+                                    {/* Description */}
+                                    <p className="text-sm text-gray-500 leading-relaxed">
+                                      {typeof activity === 'object' && activity.description ? 
+                                        activity.description : 
+                                        (activityType === "food" ? "Experience local cuisine at this popular dining spot" : 
+                                         activityType === "accommodation" ? "Comfortable lodging with excellent amenities" : 
+                                         activityType === "culture" ? "Cultural experience showcasing local heritage" :
+                                         activityType === "nature" ? "Natural beauty and outdoor experience" :
+                                         activityType === "shopping" ? "Shopping destination for local goods and souvenirs" :
+                                         activityType === "nightlife" ? "Evening entertainment and social scene" :
+                                         "Must-visit attraction showcasing local highlights")}
+                                    </p>
+                                    
+                                    {/* Fallback Google Maps search link if no place_id */}
+                                    {(typeof activity !== 'object' || !activity.placeId) && (
+                                      <div className="mt-3">
                                         <a
-                                          href={`https://www.google.com/maps/search/${encodeURIComponent(activityName)}`}
+                                          href={`https://www.google.com/maps/search/${encodeURIComponent(cleanActivityName)}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center text-xs text-blue-500 hover:text-blue-600"
@@ -357,8 +456,8 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                           <Map className="w-3 h-3 mr-1" />
                                           Find on Maps
                                         </a>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>

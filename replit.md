@@ -28,6 +28,14 @@ A conversational AI travel planning platform that creates personalized travel pa
 - Security: Input validation, content filtering, rate limiting, no auto-persistence of user text
 
 ## Recent Changes
+- 2025-01-26: **Enhanced Itinerary Card UI:**
+  - Replaced text-based ratings with visual star component (with half-star support)
+  - Added formatted review counts with lighter gray color (#CCCCCC) and K formatting (e.g., 1.5k)
+  - Implemented colored pill-shaped category tags (red for food, blue for attractions, green for nature, etc.)
+  - Improved information hierarchy with bold titles, secondary ratings, and smaller description text
+  - Added StarRating component for reusable visual rating display
+  - Enhanced activity type detection with expanded categories (food, culture, nature, shopping, nightlife)
+  - Icons now have category-specific colors (red for food, purple for accommodation, blue for attractions)
 - 2025-01-26: **Fixed Free-Text Preference Handling:**
   - Free-text preferences from chat (e.g., "play water") now properly influence itinerary generation
   - Added extraction of preferences from conversation messages (water, food, culture, nature, etc.)
