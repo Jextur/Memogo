@@ -30,6 +30,11 @@ export function StarRating({
 
   const starSize = sizeClasses[size];
   
+  // Size-dependent text sizes
+  const ratingTextSize = size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : 'text-lg';
+  // Review count is always smaller
+  const reviewTextSize = size === 'sm' ? 'text-[10px]' : size === 'md' ? 'text-xs' : 'text-sm';
+  
   const formatReviewCount = (count: number): string => {
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
@@ -41,20 +46,20 @@ export function StarRating({
   };
 
   return (
-    <div className={`inline-flex items-center ${className}`}>
+    <div className={`inline-flex items-center min-w-0 ${className}`}>
       {/* Stars */}
-      <div className="flex items-center">
+      <div className="flex items-center flex-shrink-0">
         {/* Full stars */}
         {Array.from({ length: fullStars }).map((_, i) => (
           <Star 
             key={`full-${i}`} 
-            className={`${starSize} fill-yellow-500 text-yellow-500`}
+            className={`${starSize} fill-yellow-500 text-yellow-500 flex-shrink-0`}
           />
         ))}
         
         {/* Half star */}
         {hasHalfStar && (
-          <div className="relative">
+          <div className="relative flex-shrink-0">
             <Star className={`${starSize} text-gray-300`} />
             <div className="absolute inset-0 overflow-hidden w-1/2">
               <Star className={`${starSize} fill-yellow-500 text-yellow-500`} />
@@ -66,24 +71,29 @@ export function StarRating({
         {Array.from({ length: emptyStars }).map((_, i) => (
           <Star 
             key={`empty-${i}`} 
-            className={`${starSize} text-gray-300`}
+            className={`${starSize} text-gray-300 flex-shrink-0`}
           />
         ))}
       </div>
       
-      {/* Rating number */}
-      {showNumber && (
-        <span className="text-base font-medium text-gray-700 ml-1.5">
-          {rating.toFixed(1)}/{maxRating}
-        </span>
-      )}
-      
-      {/* Review count - always visible when provided */}
-      {reviewCount !== undefined && reviewCount > 0 && (
-        <span className="text-xs text-gray-400 ml-2">
-          ({formatReviewCount(reviewCount)} reviews)
-        </span>
-      )}
+      {/* Rating number and review count in same flex container */}
+      <div className="flex items-center gap-1 ml-1.5 min-w-0">
+        {showNumber && (
+          <span className={`font-medium text-gray-700 ${ratingTextSize} flex-shrink-0`}>
+            {rating.toFixed(1)}
+          </span>
+        )}
+        
+        {/* Review count with smaller font and truncation */}
+        {reviewCount !== undefined && reviewCount > 0 && (
+          <span 
+            className={`${reviewTextSize} text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis`}
+            style={{ maxWidth: '80px' }}
+          >
+            ({formatReviewCount(reviewCount)})
+          </span>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { MapPin, Clock, ExternalLink, X, Edit2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { StarRating } from "@/components/ui/StarRating";
+import { StarRating } from "@/components/ui/star-rating";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -212,11 +212,12 @@ export function POICard({
           
           {/* Rating and Reviews */}
           {rating && totalReviews >= 10 && (
-            <div className="mb-2">
+            <div className="mb-2 max-w-full overflow-hidden">
               <StarRating 
                 rating={rating} 
                 reviewCount={totalReviews}
                 size="sm"
+                showNumber={true}
               />
             </div>
           )}
