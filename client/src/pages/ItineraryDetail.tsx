@@ -81,17 +81,92 @@ export function ItineraryDetail() {
   
   // Initialize itinerary with IDs for all POIs
   const initializeItinerary = (originalItinerary: any[]) => {
-    return originalItinerary?.map((day: any) => ({
-      ...day,
-      pois: day.pois?.map((poi: any) => ({
+    return originalItinerary?.map((day: any, dayIndex: number) => {
+      // Convert activities to POIs if POIs don't exist
+      let pois = day.pois || [];
+      
+      // If no POIs but has activities, convert activities to POIs
+      if ((!pois || pois.length === 0) && day.activities) {
+        pois = day.activities.map((activity: any, actIndex: number) => {
+          // Determine time slot based on position in array
+          let timeSlot = 'morning';
+          const totalActivities = day.activities.length;
+          const position = actIndex / totalActivities;
+          
+          if (position < 0.33) {
+            timeSlot = 'morning';
+          } else if (position < 0.66) {
+            timeSlot = 'afternoon';
+          } else {
+            timeSlot = 'evening';
+          }
+          
+          // If activity is a string, parse it
+          if (typeof activity === 'string') {
+            const patterns = [
+              /^(.*?)\s*-\s*(.+?)\s*-\s*rated\s*([\d.]+)★?\s*with\s*([\d,]+)\s*reviews?$/,
+              /^(.*?)\s*-\s*(.+?)\s*-\s*([\d.]+)★?\s*\(([\d,]+)\s*reviews?\)$/,
+              /^(.*?)\s*-\s*(.+?)$/
+            ];
+            
+            let parsedPoi = null;
+            for (const pattern of patterns) {
+              const match = activity.match(pattern);
+              if (match) {
+                const [, name, description, rating, reviews] = match;
+                parsedPoi = {
+                  name: name?.trim() || activity,
+                  description: description?.trim() || 'Must-visit attraction',
+                  rating: rating ? parseFloat(rating) : 4.5,
+                  reviewCount: reviews ? parseInt(reviews.replace(/,/g, '')) : 1000,
+                  category: 'Attraction',
+                  duration: '~2 hours'
+                };
+                break;
+              }
+            }
+            
+            return {
+              ...(parsedPoi || {
+                name: activity,
+                description: 'Must-visit attraction',
+                rating: 4.5,
+                reviewCount: 1000,
+                category: 'Attraction',
+                duration: '~2 hours'
+              }),
+              id: `poi-${dayIndex}-${actIndex}-${Date.now()}`,
+              time: timeSlot,
+              timeLabel: timeSlot.charAt(0).toUpperCase() + timeSlot.slice(1)
+            };
+          }
+          
+          // If activity is already an object
+          return {
+            ...activity,
+            id: activity.id || `poi-${dayIndex}-${actIndex}-${Date.now()}`,
+            time: activity.time || timeSlot,
+            timeLabel: activity.timeLabel || timeSlot.charAt(0).toUpperCase() + timeSlot.slice(1)
+          };
+        });
+      }
+      
+      // Ensure all POIs have IDs and time slots
+      pois = pois.map((poi: any, poiIndex: number) => ({
         ...poi,
-        id: poi.id || `poi-${Date.now()}-${Math.random()}`,
-        time: poi.time || poi.timeLabel?.toLowerCase() || 'morning'
-      }))
-    })) || [];
+        id: poi.id || `poi-${dayIndex}-${poiIndex}-${Date.now()}`,
+        time: poi.time || poi.timeLabel?.toLowerCase() || 'morning',
+        timeLabel: poi.timeLabel || (poi.time ? poi.time.charAt(0).toUpperCase() + poi.time.slice(1) : 'Morning')
+      }));
+      
+      return {
+        ...day,
+        pois
+      };
+    }) || [];
   };
   
-  const [itinerary, setItinerary] = useState<any[]>(initializeItinerary(pkg?.itinerary));
+  const [itinerary, setItinerary] = useState<any[]>(initializeItinerary(pkg?.itinerary || []));
 
   // Handler for adding POI to itinerary
   const handleAddPOI = (poi: POI, timeSlot: string) => {
@@ -162,16 +237,28 @@ export function ItineraryDetail() {
   };
 
   // Handler for drag and drop
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: any, dayIndex: number) => {
     if (!result.destination) return;
     
-    const dayIndex = parseInt(result.destination.droppableId.split('-')[1]);
     const newItinerary = [...itinerary];
     const day = newItinerary[dayIndex];
     
     if (!day.pois) return;
     
+    // Get the source and destination time slots
+    const sourceTimeSlot = result.source.droppableId.split('-')[2];
+    const destTimeSlot = result.destination.droppableId.split('-')[2];
+    
+    // Get the moved item
     const [reorderedItem] = day.pois.splice(result.source.index, 1);
+    
+    // Update time slot if moving between different time periods
+    if (sourceTimeSlot !== destTimeSlot) {
+      reorderedItem.time = destTimeSlot;
+      reorderedItem.timeLabel = destTimeSlot.charAt(0).toUpperCase() + destTimeSlot.slice(1);
+    }
+    
+    // Insert at new position
     day.pois.splice(result.destination.index, 0, reorderedItem);
     
     setItinerary(newItinerary);
@@ -321,13 +408,13 @@ export function ItineraryDetail() {
               </div>
               
               <div className="p-4 md:p-5">
-                {/* Group POIs by time label if available */}
+                {/* Group POIs by time label with drag and drop */}
                 {day.pois && day.pois.length > 0 ? (
-                  <>
+                  <DragDropContext onDragEnd={(result) => handleDragEnd(result, index)}>
                     {['Morning', 'Afternoon', 'Evening'].map((timeLabel) => {
                       const timePois = day.pois?.filter((poi: any) => 
                         poi.timeLabel === timeLabel || 
-                        (poi.time && poi.time.toLowerCase().includes(timeLabel.toLowerCase()))
+                        (poi.time && poi.time.toLowerCase() === timeLabel.toLowerCase())
                       ) || [];
                       
                       if (timePois.length === 0) return null;
@@ -347,99 +434,65 @@ export function ItineraryDetail() {
                             <span className={`text-sm font-semibold ${
                               timeLabel === 'Evening' ? 'text-purple-600' : 'text-orange-500'
                             }`}>
-                              {timeLabel} {timePois[0]?.time && `(${timePois[0].time})`}
+                              {timeLabel}
                             </span>
                           </div>
                           
-                          <div className="space-y-2 ml-8 md:ml-10">
-                            {timePois.map((poi: any, poiIndex: number) => (
-                              <div key={poiIndex} className="relative group">
-                                <POICard 
-                                  {...poi} 
-                                  onDelete={poi.id ? () => handleDeletePOI(index, poi.id) : undefined}
-                                  onTimeChange={poi.id ? (newTime) => handleUpdatePOITime(index, poi.id, newTime) : undefined}
-                                />
+                          <Droppable droppableId={`day-${index}-${timeLabel.toLowerCase()}`}>
+                            {(provided) => (
+                              <div 
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className="space-y-2 ml-8 md:ml-10"
+                              >
+                                {timePois.map((poi: any, poiIndex: number) => {
+                                  const actualIndex = day.pois.findIndex((p: any) => p.id === poi.id);
+                                  return (
+                                    <Draggable key={poi.id} draggableId={poi.id} index={actualIndex}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          className={`relative group ${
+                                            snapshot.isDragging ? 'shadow-lg opacity-90' : ''
+                                          }`}
+                                        >
+                                          <div className="flex items-start gap-2">
+                                            <div
+                                              {...provided.dragHandleProps}
+                                              className="mt-3 cursor-move opacity-40 hover:opacity-100 transition-opacity"
+                                            >
+                                              <GripVertical className="w-4 h-4 text-gray-500" />
+                                            </div>
+                                            <div className="flex-1">
+                                              <POICard 
+                                                {...poi} 
+                                                onDelete={() => handleDeletePOI(index, poi.id)}
+                                                onTimeChange={(newTime) => handleUpdatePOITime(index, poi.id, newTime)}
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  );
+                                })}
+                                {provided.placeholder}
                               </div>
-                            ))}
-                          </div>
+                            )}
+                          </Droppable>
                         </div>
                       );
                     })}
-                    
-                    {/* POIs without time labels */}
-                    {(() => {
-                      const untimedPois = day.pois?.filter((poi: any) => 
-                        !poi.timeLabel && 
-                        (!poi.time || !['morning', 'afternoon', 'evening'].some(t => 
-                          poi.time.toLowerCase().includes(t)
-                        ))
-                      ) || [];
-                      
-                      if (untimedPois.length === 0) return null;
-                      
-                      return (
-                        <div className="space-y-2">
-                          {untimedPois.map((poi: any, poiIndex: number) => (
-                            <div key={`untimed-${poiIndex}`} className="relative group">
-                              <POICard 
-                                {...poi} 
-                                onDelete={poi.id ? () => handleDeletePOI(index, poi.id) : undefined}
-                                onTimeChange={poi.id ? (newTime: string) => handleUpdatePOITime(index, poi.id, newTime) : undefined}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </>
+                  </DragDropContext>
                 ) : null}
-                  
-                {/* Fallback to activities if POIs not available */}
-                {!day.pois && day.activities?.map((activity: string | any, actIndex: number) => {
-                  // If activity is already an object, use it directly
-                  if (typeof activity === 'object' && activity.name) {
-                    return <POICard key={actIndex} {...activity} />;
-                  }
-                  
-                  // Parse activity string to extract POI data
-                  const activityStr = String(activity);
-                  
-                  // Try different regex patterns
-                  const patterns = [
-                    /^(.*?)\s*-\s*(.+?)\s*-\s*rated\s*([\d.]+)★?\s*with\s*([\d,]+)\s*reviews?$/,
-                    /^(.*?)\s*-\s*(.+?)\s*-\s*([\d.]+)★?\s*\(([\d,]+)\s*reviews?\)$/,
-                    /^(.*?)\s*-\s*(.+?)$/
-                  ];
-                  
-                  for (const pattern of patterns) {
-                    const match = activityStr.match(pattern);
-                    if (match) {
-                      const [, name, description, rating, reviews] = match;
-                      const poi = {
-                        name: name?.trim() || activityStr,
-                        description: description?.trim() || 'Must-visit attraction showcasing local highlights',
-                        rating: rating ? parseFloat(rating) : 4.5,
-                        reviewCount: reviews ? parseInt(reviews.replace(/,/g, '')) : Math.floor(Math.random() * 50000) + 1000,
-                        category: 'Attraction',
-                        duration: '~2 hours',
-                        placeId: undefined
-                      };
-                      return <POICard key={actIndex} {...poi} />;
-                    }
-                  }
-                  
-                  // Final fallback - create a simple POI from the activity string
-                  const poi = {
-                    name: activityStr,
-                    description: 'Must-visit attraction showcasing local highlights',
-                    rating: 4.5,
-                    reviewCount: Math.floor(Math.random() * 50000) + 1000,
-                    category: 'Attraction',
-                    duration: '~2 hours',
-                    placeId: undefined
-                  };
-                  return <POICard key={actIndex} {...poi} />;
-                })}
+                {/* Empty state */}
+                {(!day.pois || day.pois.length === 0) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="mb-2">No activities planned for this day yet.</p>
+                    <p className="text-sm">Click "Add POI" to start adding activities.</p>
+                  </div>
+                )}
               </div>
             </Card>
           ))}
@@ -477,7 +530,7 @@ export function ItineraryDetail() {
         onAddPOI={handleAddPOI}
         conversationId={pkg?.conversationId}
         city={pkg?.destination}
-        tags={pkg?.tags || []}
+        tags={[]}
       />
     </div>
   );

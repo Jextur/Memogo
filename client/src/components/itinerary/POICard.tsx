@@ -89,13 +89,14 @@ export function POICard({
     <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all relative" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
       {/* Delete and Time Edit Buttons */}
       {(onDelete || onTimeChange) && (
-        <div className="absolute top-2 right-2 flex gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2 flex gap-1">
           {onTimeChange && (
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0 opacity-60 hover:opacity-100 transition-opacity"
               onClick={() => setIsEditingTime(!isEditingTime)}
+              title="Edit time slot"
             >
               <Edit2 className="h-3 w-3" />
             </Button>
@@ -104,10 +105,11 @@ export function POICard({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+              className="h-7 w-7 p-0 text-gray-500 hover:bg-red-100 hover:text-red-600 transition-colors"
               onClick={onDelete}
+              title="Delete activity"
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
