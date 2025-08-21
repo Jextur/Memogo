@@ -107,7 +107,7 @@ export default function Home() {
               onConversationIdChange={(id) => setConversationId(id)}
             />
             <PackagePreview
-              conversationId={conversationId}
+              conversationId={conversationId || undefined}
               onViewAllPackages={handleViewAllPackages}
               onSelectPackage={handleSelectPackage}
             />
@@ -139,7 +139,7 @@ export default function Home() {
         onAddPOI={handleAddPOI}
         conversationId={conversationId || undefined}
         city={selectedPackage?.destination}
-        tags={packages[0]?.metadata?.selectedTags as string[] | undefined}
+        tags={selectedPackage ? [] : undefined}
       />
       {/* Floating Export Button (mobile) */}
       {selectedPackage && (

@@ -28,6 +28,23 @@ A conversational AI travel planning platform that creates personalized travel pa
 - Security: Input validation, content filtering, rate limiting, no auto-persistence of user text
 
 ## Recent Changes
+- 2025-01-26: **Session-Scoped Personalization System:**
+  - Implemented SessionManager service with 4-hour TTL for temporary preference storage
+  - Created session middleware for Express with cookie/header-based session tracking
+  - Built SessionEnhancedPackageGenerator that applies personalization weights (≤30% boost)
+  - Added session ID tracking to API client via X-Session-Id headers
+  - Formula: Output = Global baseline × Session-specific weights (0.7 to 1.3 range)
+  - Session preferences never persist to global database, only verified Google Places POIs
+  - Free-text inputs (e.g., "play water", "burgers") only affect ranking within session
+  - Automatic session cleanup every 15 minutes for expired sessions
+  - Frontend localStorage tracking with automatic session renewal
+- 2025-01-26: **Enhanced POI Search with LLM Ranking:**
+  - Implemented Google Places search with city/context scoping
+  - Added LLM ranking to filter and show top 5 best results
+  - 500ms debounced auto-search as you type
+  - Enhanced UI with star ratings, review counts (13.7k format), and price levels ($$$)
+  - Category badges with color coding (red for food, blue for attractions, etc.)
+  - "Search wider radius" fallback for no results
 - 2025-01-26: **Enhanced Itinerary Card UI:**
   - Replaced text-based ratings with visual star component (with half-star support)
   - Added formatted review counts with lighter gray color (#CCCCCC) and K formatting (e.g., 1.5k)

@@ -12,12 +12,26 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Get session ID from localStorage
+  const sessionId = localStorage.getItem('travelify_session_id');
+  
+  const headers: HeadersInit = data ? { "Content-Type": "application/json" } : {};
+  if (sessionId) {
+    headers['X-Session-Id'] = sessionId;
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // Update session ID if server sends a new one
+  const newSessionId = res.headers.get('X-Session-Id');
+  if (newSessionId) {
+    localStorage.setItem('travelify_session_id', newSessionId);
+  }
 
   await throwIfResNotOk(res);
   return res;

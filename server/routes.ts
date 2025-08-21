@@ -6,8 +6,14 @@ import { searchPlaces, getPlaceDetails, getPhotoUrl } from "./services/googlePla
 import { insertConversationSchema, insertTravelPackageSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
 import cityRoutes from "./routes/cities";
+import { sessionMiddleware, extractSessionPreferences } from "./middleware/sessionMiddleware";
+import { sessionEnhancedPackageGenerator } from "./services/sessionEnhancedPackageGenerator";
+import { sessionManager } from "./services/sessionManager";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply session middleware to all routes
+  app.use(sessionMiddleware);
+  
   // Register city routes
   app.use('/api/cities', cityRoutes);
   
@@ -190,14 +196,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionPreferences.push(...themePreferences);
       }
       
-      const packages = await generateEnhancedTravelPackages({
-        destination: conversation.destination,
-        days: conversation.days,
-        people: conversation.people || 1,
-        theme: conversation.theme,
-        selectedTags: conversation.selectedTags || [], // Official curated tags
-        freeTextPreferences: Array.from(new Set(sessionPreferences)) // Session-only preferences
-      });
+      // Extract session preferences if available
+      if (req.sessionId) {
+        extractSessionPreferences(req);
+      }
+      
+      // Use session-enhanced generator if session exists
+      const packages = req.sessionId ? 
+        await sessionEnhancedPackageGenerator.generatePackages(
+          conversation.destination,
+          conversation.days,
+          conversation.people || 1,
+          conversation.selectedTags || [],
+          Array.from(new Set(sessionPreferences)),
+          conversation.messages || [],
+          req.sessionId
+        ) :
+        await generateEnhancedTravelPackages({
+          destination: conversation.destination,
+          days: conversation.days,
+          people: conversation.people || 1,
+          theme: conversation.theme,
+          selectedTags: conversation.selectedTags || [],
+          freeTextPreferences: Array.from(new Set(sessionPreferences))
+        });
       
       // Save packages to storage
       const savedPackages = await Promise.all(
