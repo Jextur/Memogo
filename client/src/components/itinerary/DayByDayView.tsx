@@ -374,7 +374,7 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                       {/* Google Maps Link */}
                                       {typeof activity === 'object' && activity.placeId && (
                                         <a
-                                          href={`https://www.google.com/maps/place/?q=place_id:${activity.placeId}`}
+                                          href={`https://www.google.com/maps/search/?api=1&query_place_id=${activity.placeId}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors group"
@@ -451,7 +451,7 @@ export function DayByDayView({ package: pkg, onBack, onAddPOI }: DayByDayViewPro
                                     {(typeof activity !== 'object' || !activity.placeId) && (
                                       <div className="mt-3">
                                         <a
-                                          href={`https://www.google.com/maps/search/${encodeURIComponent(cleanActivityName)}`}
+                                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanActivityName)}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="inline-flex items-center text-xs text-blue-500 hover:text-blue-600"

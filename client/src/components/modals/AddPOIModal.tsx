@@ -241,7 +241,7 @@ export function AddPOIModal({ isOpen, onClose, onAddPOI, conversationId, city, t
                       <h5 className="font-bold text-base text-brand-text flex-1 mr-2">{poi.name}</h5>
                       <div className="flex items-center space-x-1">
                         <a
-                          href={`https://www.google.com/maps/place/?q=place_id:${poi.place_id}`}
+                          href={`https://www.google.com/maps/search/?api=1&query_place_id=${poi.place_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors group"

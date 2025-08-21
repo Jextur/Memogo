@@ -61,8 +61,11 @@ export function POICard({
     ? description.substring(0, 117) + '...'
     : description || 'Must-visit attraction showcasing local highlights';
   
-  // Format maps URL
-  const mapsLink = mapsUrl || (placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : null);
+  // Format maps URL - Use Google Maps API format that works for both mobile and desktop
+  const mapsLink = mapsUrl || 
+    (placeId 
+      ? `https://www.google.com/maps/search/?api=1&query_place_id=${placeId}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
   
   return (
     <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
@@ -133,10 +136,10 @@ export function POICard({
             
             {/* Find on Maps */}
             <a
-              href={mapsLink || '#'}
+              href={mapsLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center text-xs text-purple-400 hover:text-purple-600 transition-colors font-medium whitespace-nowrap ml-2"
+              className="flex items-center text-xs text-purple-600 hover:text-purple-800 transition-colors font-medium whitespace-nowrap ml-2"
             >
               <MapPin className="w-3 h-3 mr-1" />
               Find on Maps
