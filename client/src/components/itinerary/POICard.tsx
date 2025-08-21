@@ -1,6 +1,15 @@
-import { MapPin, Clock, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Clock, ExternalLink, X, Edit2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/StarRating";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface POICardProps {
   name: string;
@@ -18,6 +27,10 @@ interface POICardProps {
   placeId?: string;
   mapsUrl?: string;
   priceLevel?: number;
+  time?: string;
+  timeLabel?: string;
+  onDelete?: () => void;
+  onTimeChange?: (newTime: string) => void;
 }
 
 export function POICard({
@@ -35,8 +48,13 @@ export function POICard({
   tags,
   placeId,
   mapsUrl,
-  priceLevel
+  priceLevel,
+  time,
+  timeLabel,
+  onDelete,
+  onTimeChange
 }: POICardProps) {
+  const [isEditingTime, setIsEditingTime] = useState(false);
   // Get review count from various possible fields
   const totalReviews = reviewCount || reviewsCount || user_ratings_total || 0;
   
@@ -68,7 +86,33 @@ export function POICard({
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
   
   return (
-    <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
+    <div className="border border-purple-200/40 rounded-lg p-3 hover:shadow-md transition-all relative" style={{ backgroundColor: 'rgba(46, 16, 101, 0.06)' }}>
+      {/* Delete and Time Edit Buttons */}
+      {(onDelete || onTimeChange) && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+          {onTimeChange && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0"
+              onClick={() => setIsEditingTime(!isEditingTime)}
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+              onClick={onDelete}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      )}
+      
       <div className="flex gap-3">
         {/* Icon */}
         <div className="flex-shrink-0">
@@ -88,6 +132,25 @@ export function POICard({
               </span>
             )}
           </div>
+          
+          {/* Time Selector when editing */}
+          {isEditingTime && onTimeChange && (
+            <div className="mb-2">
+              <Select value={time || "morning"} onValueChange={(value) => {
+                onTimeChange(value);
+                setIsEditingTime(false);
+              }}>
+                <SelectTrigger className="w-32 h-7 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="morning">Morning</SelectItem>
+                  <SelectItem value="afternoon">Afternoon</SelectItem>
+                  <SelectItem value="evening">Evening</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           {/* Rating and Reviews */}
           {rating && totalReviews >= 10 && (

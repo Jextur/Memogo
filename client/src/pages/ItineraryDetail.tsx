@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TravelPackage } from "@/types/travel";
+import { TravelPackage, POI } from "@/types/travel";
 import { Star } from "lucide-react";
 import { usePackageStore } from "@/lib/packageStore";
 import { POICard } from "@/components/itinerary/POICard";
+import { AddPOIModal } from "@/components/modals/AddPOIModal";
 import {
   ArrowLeft,
   MapPin,
@@ -18,7 +20,9 @@ import {
   Map,
   ExternalLink,
   Sun,
-  Moon
+  Moon,
+  Plus,
+  Search
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
@@ -26,6 +30,8 @@ export function ItineraryDetail() {
   const [match, params] = useRoute("/itinerary/:id");
   const [, setLocation] = useLocation();
   const { getPackageById } = usePackageStore();
+  const [isAddPOIModalOpen, setIsAddPOIModalOpen] = useState(false);
+  const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   
   // Try to get package from store first
   const storedPackage = params?.id ? getPackageById(params.id) : undefined;
@@ -70,6 +76,75 @@ export function ItineraryDetail() {
   }
 
   const pkg = packageDetails;
+  const [itinerary, setItinerary] = useState<any[]>(pkg?.itinerary || []);
+
+  // Handler for adding POI to itinerary
+  const handleAddPOI = (poi: POI, timeSlot: string) => {
+    if (selectedDayIndex === null) return;
+    
+    const newItinerary = [...itinerary];
+    const day = newItinerary[selectedDayIndex];
+    
+    // Create a new POI with time slot information
+    const newPOI = {
+      ...poi,
+      timeLabel: timeSlot.charAt(0).toUpperCase() + timeSlot.slice(1),
+      time: timeSlot,
+      id: `poi-${Date.now()}-${Math.random()}` // Unique ID for delete functionality
+    };
+    
+    // Add POI to the day's POIs array
+    if (!day.pois) {
+      day.pois = [];
+    }
+    day.pois.push(newPOI);
+    
+    // Sort POIs by time (morning -> afternoon -> evening)
+    const timeOrder: Record<string, number> = { morning: 0, afternoon: 1, evening: 2 };
+    day.pois.sort((a: any, b: any) => {
+      const aTime = timeOrder[a.time?.toLowerCase()] ?? 3;
+      const bTime = timeOrder[b.time?.toLowerCase()] ?? 3;
+      return aTime - bTime;
+    });
+    
+    setItinerary(newItinerary);
+  };
+
+  // Handler for deleting POI from itinerary
+  const handleDeletePOI = (dayIndex: number, poiId: string) => {
+    const newItinerary = [...itinerary];
+    const day = newItinerary[dayIndex];
+    
+    if (day.pois) {
+      day.pois = day.pois.filter((poi: any) => poi.id !== poiId);
+    }
+    
+    setItinerary(newItinerary);
+  };
+
+  // Handler for updating POI time
+  const handleUpdatePOITime = (dayIndex: number, poiId: string, newTime: string) => {
+    const newItinerary = [...itinerary];
+    const day = newItinerary[dayIndex];
+    
+    if (day.pois) {
+      const poi = day.pois.find((p: any) => p.id === poiId);
+      if (poi) {
+        poi.time = newTime;
+        poi.timeLabel = newTime.charAt(0).toUpperCase() + newTime.slice(1);
+        
+        // Re-sort POIs by time
+        const timeOrder: Record<string, number> = { morning: 0, afternoon: 1, evening: 2 };
+        day.pois.sort((a: any, b: any) => {
+          const aTime = timeOrder[a.time?.toLowerCase()] ?? 3;
+          const bTime = timeOrder[b.time?.toLowerCase()] ?? 3;
+          return aTime - bTime;
+        });
+      }
+    }
+    
+    setItinerary(newItinerary);
+  };
   
   // Helper function to get activity icon
   const getActivityIcon = (type: string) => {
@@ -140,10 +215,15 @@ export function ItineraryDetail() {
               <div className="text-xs text-gray-600">Days</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {pkg.itinerary?.reduce((sum, day: any) => sum + (day.pois?.length || day.activities?.length || 0), 0) || 39}
-              </div>
-              <div className="text-xs text-gray-600">Attractions</div>
+              <Button
+                onClick={() => setIsAddPOIModalOpen(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 mx-auto"
+                size="sm"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="font-medium">Add POI</span>
+              </Button>
+              <div className="text-xs text-gray-600 mt-1">Search & Add Places</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">
@@ -191,7 +271,7 @@ export function ItineraryDetail() {
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">Day-by-Day Itinerary</h2>
         
         <div className="space-y-4">
-          {pkg.itinerary?.map((day: any, index: number) => (
+          {itinerary?.map((day: any, index: number) => (
             <Card key={index} className="bg-white overflow-hidden border-gray-200">
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 md:p-4 border-b">
                 <div className="flex items-center justify-between">
@@ -201,6 +281,18 @@ export function ItineraryDetail() {
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedDayIndex(index);
+                        setIsAddPOIModalOpen(true);
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="text-purple-600 border-purple-300 hover:bg-purple-50"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Add POI
+                    </Button>
                     <span className="text-xs md:text-sm text-gray-600">
                       ● {day.pois?.length || day.activities?.length || 0} activities
                     </span>
@@ -241,7 +333,13 @@ export function ItineraryDetail() {
                           
                           <div className="space-y-2 ml-8 md:ml-10">
                             {timePois.map((poi: any, poiIndex: number) => (
-                              <POICard key={poiIndex} {...poi} />
+                              <div key={poiIndex} className="relative group">
+                                <POICard 
+                                  {...poi} 
+                                  onDelete={poi.id ? () => handleDeletePOI(index, poi.id) : undefined}
+                                  onTimeChange={poi.id ? (newTime) => handleUpdatePOITime(index, poi.id, newTime) : undefined}
+                                />
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -342,6 +440,19 @@ export function ItineraryDetail() {
           </Button>
         </div>
       </div>
+
+      {/* Add POI Modal */}
+      <AddPOIModal
+        isOpen={isAddPOIModalOpen}
+        onClose={() => {
+          setIsAddPOIModalOpen(false);
+          setSelectedDayIndex(null);
+        }}
+        onAddPOI={handleAddPOI}
+        conversationId={pkg?.conversationId}
+        city={pkg?.destination}
+        tags={pkg?.tags || []}
+      />
     </div>
   );
 }
