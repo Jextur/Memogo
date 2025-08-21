@@ -1,0 +1,47 @@
+Task: Color‑coded POI chips + fix “Find on Maps” deep links
+	1.	Color‑coded chips (keep current UI, just style by POI type)
+
+	•	Reuse the existing <Chip> component and add a variant derived from Google Places type (fallback to default if unknown).
+	•	Suggested palette (accessible on light cards; hover = 8% darken, pressed = 16% darken, text = white):
+	•	Restaurant / Food #E86AA6
+	•	Cafe / Bakery #F4A261
+	•	Bar / Nightlife #F7B801
+	•	Museum / History #4C6FFF
+	•	Park / Nature / Garden #2EAD68
+	•	Shopping / Market #23B5B5
+	•	Landmark / Observation Deck / Tower #7C5CFC
+	•	Theme Park / Amusement #FF7A59
+	•	Temple / Shrine / Religious Site #C84E89
+	•	Beach / Lake / Waterfront #03A9F4
+	•	General “Attraction” (fallback) use our current purple brand #6E44FF
+	•	Ensure chip border radius and padding match current design; multi‑line wrapping must remain tidy on small screens.
+	•	Map Places types to variants (examples):
+restaurant, food → Restaurant; cafe, bakery → Cafe; bar, night_club → Nightlife;
+museum → Museum; park, zoo, aquarium → Nature; shopping_mall, store, market → Shopping;
+tourist_attraction, point_of_interest, landmark, observation_deck → Landmark;
+amusement_park, theme_park → Theme Park; hindu_temple, church, mosque, shrine → Religious;
+beach, natural_feature → Beach/Waterfront.
+Keep it configurable in one mapping file.
+
+	2.	Fix “Find on Maps” so it opens the exact place (mobile app + desktop)
+
+	•	For every POI, store Google Places place_id (from Places Details).
+	•	Build links using Google’s Universal Links so they open the app if installed, otherwise the web:
+	•	Preferred (works on iOS/Android/desktop):
+https://www.google.com/maps/search/?api=1&query_place_id=PLACE_ID&query=ENCODED_NAME
+	•	(Optional directions CTA later) https://www.google.com/maps/dir/?api=1&destination_place_id=PLACE_ID
+	•	Remove any plain “q=NAME” links (they’re imprecise). Always include query_place_id.
+	•	Open in new tab with target="_blank" rel="noopener".
+
+	3.	Acceptance criteria
+
+	•	Chips show distinct colors by category; unknown types use purple fallback.
+	•	Chips remain readable (WCAG AA: contrast ≥ 4.5:1).
+	•	On mobile & desktop, tapping Find on Maps opens the exact POI; Google Maps app is used when available, otherwise the browser page for that place. No more generic map homepage.
+	•	No layout shift; chip wrapping behaves correctly on small screens.
+
+	4.	QA checklist
+
+	•	Verify at least one example for each category above.
+	•	Test “Find on Maps” for several POIs (with/without special characters in names).
+	•	Confirm links still work after reordering POIs or editing days.
