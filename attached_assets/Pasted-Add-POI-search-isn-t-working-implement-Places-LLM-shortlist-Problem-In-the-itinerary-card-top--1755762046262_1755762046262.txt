@@ -1,0 +1,33 @@
+Add-POI search isn’t working; implement Places+LLM shortlist
+
+Problem
+	•	In the itinerary card (top-right “Add POI”), typing a query like “burgers” returns no response.
+	•	The expected behavior is to query Google Places, then let the LLM rank/clean results, and show a shortlist for the user to pick.
+
+What to implement
+	1.	Wire the search
+	•	On “Add POI” modal input, call Google Places Text Search (or Nearby Search if we know the day’s map center).
+	•	Scope by city / current day’s area and radius; language=en (or user locale).
+	•	Query = raw user text (e.g., “burgers”, “ramen near shibuya”, “kid-friendly museum”).
+	2.	Normalize & enrich
+	•	For each result keep: place_id, name, formatted_address, location, rating, user_ratings_total, price_level, opening_hours.open_now, types, plus one photo ref (optional).
+	•	Convert to our POI schema.
+	3.	LLM re-ranking (lightweight)
+	•	Give the LLM the normalized list (top 20) + user context (trip tags, time slot, distance constraints).
+	•	Ask it to rank and filter to 5 best options; drop low-credibility items (e.g., rating < 4.0 or < 200 reviews unless few results).
+	4.	Show a shortlist (5 items)
+	•	Each card shows: Name, ⭐ rating + reviews count (e.g., 4.5 · 8.2k), price level (e.g., $$), distance/time from current anchor, and a “View on Maps” deep link (by place_id).
+	•	Primary action: Add to Day X (time slot); secondary: Details.
+	5.	UX essentials
+	•	Loading state (skeleton/spinner) and empty state (“No results—try a broader query or a different area”).
+	•	Debounce input (≈400–600ms).
+	•	Error handling for quota / network; show toast + retry.
+	•	Deterministic cap: always return up to 5 choices; if <5 from Places, show what we have and offer “Search wider radius”.
+	6.	Acceptance criteria
+	•	Typing “burgers” in Tokyo returns 3–5 burger places with ratings/reviews and map links within 3–5 seconds.
+	•	Selecting one inserts a POI card into the chosen time slot with persisted place_id.
+	•	Works for generic terms (“coffee”), category terms (“art museum”), and specific names (“teamLab Planets”).
+
+Edge cases / fallback
+	•	If Places returns 0, auto-widen radius and relax filters once; then show the empty state if still none.
+	•	Respect opening hours if the selected time slot is outside typical hours (warn but allow).
