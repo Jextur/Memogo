@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useConversation } from "@/hooks/useConversation";
 import { EnhancedTagSelector } from "@/components/chat/EnhancedTagSelector";
@@ -16,7 +16,6 @@ interface ChatInterfaceProps {
 
 export function ChatInterface({ conversationId, onPackagesReady, onConversationIdChange }: ChatInterfaceProps) {
   const [message, setMessage] = useState("");
-  const [isInputFocused, setIsInputFocused] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [selectedCity, setSelectedCity] = useState<{ name: string; countryCode: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -210,7 +209,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
   const showWelcome = messages.length === 0;
 
   return (
-    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[600px] relative">
+    <Card className="bg-brand-card border-brand-border overflow-hidden flex flex-col h-[calc(100vh-200px)] min-h-[600px]">
       <CardHeader className="border-b border-brand-border">
         <CardTitle className="flex items-center gap-2 text-brand-text">
           <Plane className="w-5 h-5 text-brand-accent" />
@@ -219,7 +218,7 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         <p className="text-brand-mute text-sm">Chat with our AI travel consultant</p>
       </CardHeader>
       
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <CardContent className="flex-1 p-4 overflow-y-auto space-y-4">
         {showWelcome && (
           <div className="flex items-start space-x-3">
             <div className="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
@@ -278,9 +277,9 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
           </div>
         ))}
 
-        {/* Show TagSelector when appropriate - with proper spacing */}
+        {/* Show TagSelector when appropriate */}
         {showTagSelector && selectedCity && !isSendingMessage && (
-          <div className="mt-4 mb-20 md:mb-4">
+          <div className="mt-4">
             <EnhancedTagSelector
               cityName={selectedCity.name}
               countryCode={selectedCity.countryCode}
@@ -307,33 +306,20 @@ export function ChatInterface({ conversationId, onPackagesReady, onConversationI
         )}
 
         <div ref={messagesEndRef} />
-      </div>
+      </CardContent>
 
-      {/* Fixed input area at bottom - always visible */}
-      <div className={`${showTagSelector ? 'absolute bottom-0 left-0 right-0 z-10' : ''} p-4 border-t border-brand-border bg-brand-card`}>
+      <div className="p-4 border-t border-brand-border">
         <div className="flex space-x-2">
-          <div className="flex-1 relative">
-            <Input
-              ref={inputRef}
-              type="text"
-              placeholder="Type your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onFocus={() => {
-                setIsInputFocused(true);
-                // Ensure the input is immediately interactive
-                setTimeout(() => {
-                  if (inputRef.current && !message) {
-                    inputRef.current.placeholder = "Type your message...";
-                  }
-                }, 0);
-              }}
-              onBlur={() => setIsInputFocused(false)}
-              onKeyPress={handleKeyPress}
-              className="w-full bg-brand-bg border-brand-border text-brand-text placeholder:text-brand-mute focus:border-brand-accent"
-              disabled={isSendingMessage || isGeneratingPackages}
-            />
-          </div>
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="Type your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 bg-brand-bg border-brand-border text-brand-text placeholder:text-brand-mute focus:border-brand-accent"
+            disabled={isSendingMessage || isGeneratingPackages}
+          />
           <Button
             onClick={handleSendMessage}
             disabled={!message.trim() || isSendingMessage || isGeneratingPackages}

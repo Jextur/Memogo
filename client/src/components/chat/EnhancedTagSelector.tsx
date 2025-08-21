@@ -115,11 +115,8 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
     if (!cityId) return tags;
     
     try {
-      const response = await fetch("/api/cities/tags/normalize", {
+      const response = await apiRequest("/api/cities/tags/normalize", {
         method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           inputs: tags,
           cityId,
@@ -128,10 +125,8 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
         })
       });
       
-      const data = await response.json();
-      
       // Combine matched and custom tags
-      return [...(data.matched || []), ...(data.custom || [])];
+      return [...(response.matched || []), ...(response.custom || [])];
     } catch (error) {
       console.error("Normalization failed:", error);
       return tags;
@@ -239,6 +234,28 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
           )}
         </div>
 
+        {/* Selected tags */}
+        {selectedTags.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-3 bg-purple-50 rounded-lg">
+            {selectedTags.map(tag => (
+              <Badge
+                key={tag}
+                className="pl-3 pr-1 py-1 bg-purple-600 text-white hover:bg-purple-700"
+              >
+                {tag}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-1 h-auto p-0.5 hover:bg-purple-500"
+                  onClick={() => removeTag(tag)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        )}
+
         {/* Available tags grouped by category */}
         <div className="space-y-3">
           {Object.entries(groupedTags).map(([category, tags]) => (
@@ -254,17 +271,16 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
                     size="sm"
                     className={`${
                       selectedTags.includes(tag.label)
-                        ? 'bg-purple-600 border-purple-600 text-white shadow-md ring-2 ring-purple-400 ring-offset-1'
+                        ? 'bg-purple-100 border-purple-400 text-purple-700'
                         : categoryColors[category as keyof typeof categoryColors] || categoryColors.other
                     } transition-all`}
                     onClick={() => toggleTag(tag.label)}
                   >
-                    {selectedTags.includes(tag.label) ? (
-                      <Check className="w-3 h-3" />
-                    ) : (
-                      categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.other
-                    )}
+                    {categoryIcons[category as keyof typeof categoryIcons] || categoryIcons.other}
                     <span className="ml-1">{tag.label}</span>
+                    {selectedTags.includes(tag.label) && (
+                      <Check className="w-3 h-3 ml-1" />
+                    )}
                   </Button>
                 ))}
               </div>
@@ -316,38 +332,12 @@ export function EnhancedTagSelector({ cityName, countryCode, onTagsSelected, onS
           )}
         </div>
 
-        {/* Selected tags - moved closer to action buttons */}
-        {selectedTags.length > 0 && (
-          <div className="p-3 bg-purple-50 rounded-lg border-2 border-purple-200">
-            <p className="text-xs text-purple-600 font-medium mb-2">Your selections:</p>
-            <div className="flex flex-wrap gap-2">
-              {selectedTags.map(tag => (
-                <Badge
-                  key={tag}
-                  className="pl-3 pr-1 py-1.5 bg-purple-600 text-white hover:bg-purple-700 font-medium shadow-sm"
-                >
-                  <Check className="w-3 h-3 mr-1" />
-                  {tag}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-1 h-auto p-0.5 hover:bg-purple-500"
-                    onClick={() => removeTag(tag)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Action buttons */}
-        <div className="flex gap-2 pt-0">
+        <div className="flex gap-2 pt-2">
           <Button
             onClick={handleConfirm}
             disabled={selectedTags.length === 0}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
           >
             Continue with {selectedTags.length || 'no'} {selectedTags.length === 1 ? 'preference' : 'preferences'}
           </Button>
