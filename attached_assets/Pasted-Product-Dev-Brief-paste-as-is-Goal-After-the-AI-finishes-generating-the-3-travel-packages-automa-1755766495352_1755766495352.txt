@@ -1,0 +1,41 @@
+Product/Dev Brief (paste as-is)
+
+Goal
+After the AI finishes generating the 3 travel packages, automatically navigate from the Chat view to the new Package Selection page. Keep navigation lightweight, mobile-friendly, and fully reversible (Back to chat).
+
+Routing
+	•	Pages and routes:
+	•	Chat: /chat
+	•	Package Selection: /packages
+	•	Itinerary Detail: /itinerary/:id
+	•	Deep link support: users can open /packages and /itinerary/:id directly.
+
+Auto-navigation trigger
+	•	When the backend returns packages.length >= 3 (or readyToShow === true), do:
+	1.	Save the package payload to a client store (e.g., Zustand/Redux/Context) → packageStore.set(packages).
+	2.	Push route to /packages?from=chat.
+	3.	On mobile, scroll to top and show a brief toast/snackbar: “3 packages are ready”.
+
+Interactions on Package Selection
+	•	Tapping a card opens /itinerary/:id directly (the yellow “View Full Itinerary” button can remain as a secondary CTA).
+	•	“Back to conversation” in the header returns to /chat and does not lose the generated packages (keep them in store until the user starts a new session).
+	•	“View All Packages” (if present) just scrolls to the cards section on the same page or is removed—cards are already visible.
+
+State & persistence
+	•	Persist packages in memory for the current session (store or URL state).
+	•	Clear packages only when:
+	•	user clicks “Start a new plan”, or
+	•	session TTL expires.
+
+UX details
+	•	Animate route change (fade/slide 200–300ms).
+	•	Auto-focus the package list container for accessibility.
+	•	Ensure the header shows breadcrumbs: Chat → Packages → Itinerary.
+	•	If generation fails, stay on /chat and show an inline error with a “Try again” button.
+
+Acceptance criteria
+	1.	After generation completes, the app navigates to /packages without extra taps.
+	2.	Pressing Back returns to /chat with conversation intact.
+	3.	Tapping a package card opens /itinerary/:id.
+	4.	Refreshing /packages or /itinerary/:id still renders using stored state or refetch.
+	5.	Works on mobile (iOS Safari, Android Chrome): no layout shift, scroll to top on entry.

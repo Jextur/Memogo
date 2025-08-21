@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TravelPackage } from "@/types/travel";
 import { Star } from "lucide-react";
+import { usePackageStore } from "@/lib/packageStore";
 import {
   ArrowLeft,
   MapPin,
@@ -21,11 +22,18 @@ import { useQuery } from "@tanstack/react-query";
 export function ItineraryDetail() {
   const [match, params] = useRoute("/itinerary/:id");
   const [, setLocation] = useLocation();
+  const { getPackageById } = usePackageStore();
   
-  const { data: packageDetails, isLoading } = useQuery<TravelPackage>({
+  // Try to get package from store first
+  const storedPackage = params?.id ? getPackageById(params.id) : undefined;
+  
+  // Fallback to API if not in store
+  const { data: fetchedPackage, isLoading } = useQuery<TravelPackage>({
     queryKey: [`/api/packages/${params?.id}`],
-    enabled: !!params?.id,
+    enabled: !!params?.id && !storedPackage,
   });
+  
+  const packageDetails = storedPackage || fetchedPackage;
 
   if (!match || !params?.id) {
     return null;
@@ -92,7 +100,7 @@ export function ItineraryDetail() {
         <div className="relative max-w-7xl mx-auto px-4 h-full flex flex-col justify-center">
           <Button
             variant="ghost"
-            onClick={() => window.history.back()}
+            onClick={() => setLocation("/packages")}
             className="text-white hover:text-white/80 mb-4 p-0 w-fit"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -143,6 +151,27 @@ export function ItineraryDetail() {
         </Card>
       </div>
 
+      {/* Breadcrumbs */}
+      <div className="max-w-7xl mx-auto px-4 pb-4">
+        <nav className="flex items-center space-x-2 text-sm">
+          <button
+            onClick={() => setLocation("/chat")}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            Chat
+          </button>
+          <span className="text-gray-400">/</span>
+          <button
+            onClick={() => setLocation("/packages")}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            Packages
+          </button>
+          <span className="text-gray-400">/</span>
+          <span className="text-gray-900 font-medium">Itinerary</span>
+        </nav>
+      </div>
+      
       {/* Day-by-Day Itinerary */}
       <div className="max-w-7xl mx-auto px-4 pb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Day-by-Day Itinerary</h2>
