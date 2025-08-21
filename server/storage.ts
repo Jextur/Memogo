@@ -1450,11 +1450,11 @@ export class MemStorage implements IStorage {
   }
 
   async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
-    const id = randomUUID();
-    const numericId = Math.max(...Array.from(this.conversations.keys()).map(k => parseInt(k) || 0), 0) + 1;
+    const conversationId = insertConversation.conversationId || randomUUID();
+    const numericId = Math.max(...Array.from(this.conversations.values()).map(c => c.id || 0), 0) + 1;
     const conversation: Conversation = {
       id: numericId,
-      conversationId: insertConversation.conversationId,
+      conversationId: conversationId,
       userId: insertConversation.userId || null,
       destination: insertConversation.destination || null,
       days: insertConversation.days || null,
@@ -1468,7 +1468,8 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    this.conversations.set(id, conversation);
+    // Use conversationId as the key for consistent lookups
+    this.conversations.set(conversationId, conversation);
     return conversation;
   }
 

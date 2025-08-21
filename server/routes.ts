@@ -41,7 +41,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { message } = req.body;
       
-      const conversation = await storage.getConversation(id);
+      // Try to get conversation by conversationId first, then fall back to id
+      let conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ error: "Conversation not found" });
       }

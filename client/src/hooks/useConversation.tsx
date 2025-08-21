@@ -17,8 +17,10 @@ export function useConversation(conversationId?: string) {
   const createConversationMutation = useMutation({
     mutationFn: createConversation,
     onSuccess: (data: Conversation) => {
-      setCurrentConversationId(data.id);
-      queryClient.setQueryData(['/api/conversation', data.id], data);
+      // Use conversationId (string UUID) not the numeric id
+      const conversationId = data.conversationId || String(data.id);
+      setCurrentConversationId(conversationId);
+      queryClient.setQueryData(['/api/conversation', conversationId], data);
     },
   });
 
@@ -32,24 +34,35 @@ export function useConversation(conversationId?: string) {
     onError: (error, variables) => {
       console.error("Error sending message:", error);
       
-      // Create a helpful error message
+      // Get current conversation
       const currentConv = queryClient.getQueryData<Conversation>(['/api/conversation', variables.conversationId]);
+      if (!currentConv) return;
+      
+      // Check if we already have a recent error message to prevent duplicates
+      const lastMessage = currentConv.messages[currentConv.messages.length - 1];
+      if (lastMessage?.role === "assistant" && 
+          lastMessage.content?.includes("I had a little trouble understanding")) {
+        // Don't add another error message if we just added one
+        console.log("Skipping duplicate error message");
+        return;
+      }
+      
+      // Create a helpful error message
       const errorMessage: ChatMessage = {
-        id: `error-${Date.now()}`,
+        id: `error-${Date.now()}-${Math.random()}`,
         role: "assistant",
         content: "I had a little trouble understanding that. Could you try rephrasing? Don't worry about typos - I can handle 'lodon' for London or 'five days' instead of '5 days'. What would you like to tell me?",
         timestamp: new Date(),
-        options: (!currentConv || currentConv.messages.length === 0) ? ["London", "Paris", "Tokyo", "New York"] : undefined
+        options: currentConv.messages.length === 0 ? ["London", "Paris", "Tokyo", "New York"] : undefined
       };
       
-      // Add error message to conversation
-      if (currentConv) {
-        queryClient.setQueryData(['/api/conversation', variables.conversationId], {
-          ...currentConv,
-          messages: [...currentConv.messages, errorMessage]
-        });
-      }
+      // Add error message to conversation only once
+      queryClient.setQueryData(['/api/conversation', variables.conversationId], {
+        ...currentConv,
+        messages: [...currentConv.messages, errorMessage]
+      });
     },
+    retry: false, // Disable automatic retries to prevent duplicate error messages
   });
 
   // Generate packages mutation

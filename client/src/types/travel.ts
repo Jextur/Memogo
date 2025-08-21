@@ -7,16 +7,20 @@ export interface ChatMessage {
 }
 
 export interface Conversation {
-  id: string;
+  id: number | string;  // Can be numeric or string
+  conversationId?: string;  // The UUID string identifier
   userId?: string;
   destination?: string;
   days?: number;
   people?: number;
   theme?: string;
+  selectedTags?: string[];
   status: string;
   messages: ChatMessage[];
   refinementCount: number;
+  packagesGenerated?: boolean;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface TravelPackage {
