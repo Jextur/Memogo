@@ -1,5 +1,6 @@
 import { searchPlaces } from './googlePlaces';
 import type { PackageGenerationRequest, GeneratedPackage } from './openai';
+import { filterPOIs } from '../utils/safetyFilters';
 
 interface POIWithReason {
   name: string;
@@ -115,7 +116,10 @@ async function searchPOIsForTag(tag: string, destination: string, count: number 
       minReviews: 100
     });
     
-    return places.slice(0, count).map(place => ({
+    // Apply safety filters to remove inappropriate POIs
+    const filteredPlaces = filterPOIs(places);
+    
+    return filteredPlaces.slice(0, count).map(place => ({
       name: place.name,
       placeId: place.place_id,
       reason: `Selected for "${tag}" - ${place.rating ? `rated ${place.rating}★` : 'popular choice'} with ${place.user_ratings_total || 0} reviews`,
@@ -136,7 +140,10 @@ async function getTopAttractions(destination: string, count: number = 10): Promi
       minReviews: 100  // Lower threshold to get more results
     });
     
-    return places.slice(0, count).map(place => ({
+    // Apply safety filters
+    const filteredPlaces = filterPOIs(places);
+    
+    return filteredPlaces.slice(0, count).map(place => ({
       name: place.name,
       placeId: place.place_id,
       reason: `Must-see attraction - ${place.rating ? `rated ${place.rating}★` : 'highly popular'} with ${place.user_ratings_total || 0} reviews`,
@@ -157,7 +164,10 @@ async function getRestaurants(destination: string, count: number = 10): Promise<
       minReviews: 50   // Lower threshold to get more results
     });
     
-    return places.slice(0, count).map(place => ({
+    // Apply safety filters
+    const filteredPlaces = filterPOIs(places);
+    
+    return filteredPlaces.slice(0, count).map(place => ({
       name: place.name,
       placeId: place.place_id,
       reason: `Highly-rated dining - ${place.rating ? `${place.rating}★` : 'popular'} (${place.user_ratings_total || 0} reviews)`,

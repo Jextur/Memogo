@@ -69,6 +69,27 @@ export const travelPackages = pgTable('travel_packages', {
   conversationIdIdx: index('idx_conversation_id').on(table.conversationId)
 }));
 
+// Quarantined table for user tag candidates (NOT part of canonical DB)
+// These are NEVER auto-promoted - only after human review
+export const userTagCandidates = pgTable('user_tag_candidates', {
+  id: serial('id').primaryKey(),
+  tagRaw: text('tag_raw').notNull(),
+  tagNorm: varchar('tag_norm', { length: 255 }).notNull(),
+  cityId: integer('city_id').references(() => cities.id),
+  category: varchar('category', { length: 50 }),
+  count: integer('count').default(1).notNull(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+  samplePois: jsonb('sample_pois').$type<string[]>(),
+  expiresAt: timestamp('expires_at').notNull(), // 30-day TTL
+  status: varchar('status', { length: 20 }).default('quarantined').notNull(),
+  reviewedAt: timestamp('reviewed_at'),
+  reviewedBy: varchar('reviewed_by', { length: 100 })
+}, (table) => ({
+  expiresIdx: index('idx_tag_candidates_expires').on(table.expiresAt),
+  statusIdx: index('idx_tag_candidates_status').on(table.status),
+  normIdx: index('idx_tag_candidates_norm').on(table.tagNorm)
+}));
+
 // Users table (minimal for now)
 export const users = pgTable('users', {
   id: varchar('id', { length: 255 }).primaryKey(),

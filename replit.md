@@ -24,6 +24,8 @@ A conversational AI travel planning platform that creates personalized travel pa
 - Styling: Tailwind CSS with purple/gold color scheme (#2D1B69, #FFD700)
 - External APIs: Google Places API for POI data
 - Data Flow: Chat → Clarification → Package Generation → Dashboard → Export
+- Data Integrity: Session-scoped tag processing, quarantined candidate logging, safety filters
+- Security: Input validation, content filtering, rate limiting, no auto-persistence of user text
 
 ## Recent Changes
 - 2025-01-26: **Fixed Free-Text Preference Handling:**
@@ -34,8 +36,14 @@ A conversational AI travel planning platform that creates personalized travel pa
   - Cities without curated tags (like Sapporo) now respect user intent from chat
   - System processes both `selectedTags` and `freeTextPreferences` arrays
   - Fixed itinerary generation to maintain 4-5 activities consistently across all days
-
-## Recent Changes
+- 2025-01-26: **Implemented Data Integrity Policy:**
+  - Session-scoped tag processing (never persisted to canonical DB)
+  - Created `userTagCandidates` quarantined table with 30-day TTL for review
+  - Added safety filters to block inappropriate/suspicious content
+  - Free-text only biases POI selection, never creates permanent tags
+  - Human review required before promoting candidates to official tags
+  - Comprehensive input validation and sanitization
+  - Rate limiting and content filtering for POIs
 - 2025-08-19: Initial project setup with conversational travel planning concept
 - Removed budget breakdown and accommodation suggestions from scope
 - Focused on core conversational experience and POI integration
