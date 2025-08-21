@@ -65,12 +65,12 @@ export function POICard({
   const mapsLink = mapsUrl || (placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : null);
   
   return (
-    <div className="bg-white border border-purple-100 rounded-xl p-4 hover:shadow-md transition-shadow">
+    <div className="border border-purple-300/30 rounded-xl p-4 hover:shadow-lg transition-all" style={{ backgroundColor: 'rgba(46, 16, 101, 0.08)', borderColor: 'rgba(147, 51, 234, 0.2)' }}>
       <div className="flex gap-4">
         {/* Icon */}
         <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-            <MapPin className="w-6 h-6 text-purple-500" />
+          <div className="w-12 h-12 bg-white/80 rounded-lg flex items-center justify-center shadow-sm">
+            <MapPin className="w-6 h-6 text-purple-600" />
           </div>
         </div>
         
@@ -100,12 +100,12 @@ export function POICard({
           {/* Category and Duration Chips */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <Badge 
-              className="text-xs px-3 py-1 rounded-full bg-purple-100 text-purple-700 border-0 font-medium"
+              className="text-xs px-3 py-1 rounded-full bg-purple-600 text-white border-0 font-medium"
             >
               {displayCategory.charAt(0).toUpperCase() + displayCategory.slice(1)}
             </Badge>
             <Badge 
-              className="text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-700 border-0"
+              className="text-xs px-3 py-1 rounded-full bg-white/80 text-gray-700 border-0"
             >
               <Clock className="w-3 h-3 mr-1 inline" />
               {formattedDuration}
@@ -132,17 +132,15 @@ export function POICard({
             </div>
             
             {/* Find on Maps */}
-            {mapsLink && (
-              <a
-                href={mapsLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center text-xs text-purple-600 hover:text-purple-800 transition-colors font-medium whitespace-nowrap ml-2"
-              >
-                <ExternalLink className="w-3 h-3 mr-1" />
-                Find on Maps
-              </a>
-            )}
+            <a
+              href={mapsLink || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center text-xs text-purple-400 hover:text-purple-600 transition-colors font-medium whitespace-nowrap ml-2"
+            >
+              <MapPin className="w-3 h-3 mr-1" />
+              Find on Maps
+            </a>
           </div>
         </div>
       </div>
