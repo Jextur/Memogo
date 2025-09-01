@@ -1,0 +1,1174 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travelify - AI Travel Planning Consultant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: "#2D1B69",
+                            card: "#241557",
+                            border: "#3A2A7A",
+                            text: "#F5F5F7",
+                            mute: "#C9C9D1",
+                            accent: "#FFD700"
+                        }
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-inter bg-brand-bg text-brand-text min-h-screen">
+    <!-- @COMPONENT: Header -->
+    <header class="border-b border-brand-border bg-brand-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-brand-accent rounded-lg flex items-center justify-center">
+                        <i class="fas fa-plane text-brand-bg text-sm"></i>
+                    </div>
+                    <h1 class="text-xl font-bold text-brand-text">Travelify</h1>
+                    <span class="text-xs bg-brand-accent/20 text-brand-accent px-2 py-1 rounded-full">AI Travel Consultant</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-4">
+                    <button class="text-brand-mute hover:text-brand-accent transition-colors">
+                        <i class="fas fa-question-circle"></i> Help
+                    </button>
+                    <button data-event="click:exportPackage" class="bg-brand-accent text-brand-bg px-4 py-2 rounded-lg font-semibold hover:bg-yellow-500 transition-colors">
+                        <i class="fas fa-download mr-2"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <!-- @STATE: currentView:string = 'conversation' -->
+        <!-- @STATE: packages:array = [] -->
+        <!-- @STATE: selectedPackage:object = null -->
+        
+        <!-- Conversation + Package Generation View -->
+        <div id="conversation-view" class="grid lg:grid-cols-2 gap-6 min-h-[calc(100vh-160px)]">
+            <!-- @COMPONENT: ChatInterface -->
+            <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-brand-border">
+                    <h2 class="font-semibold text-lg">Plan Your Perfect Trip</h2>
+                    <p class="text-brand-mute text-sm mt-1">Chat with our AI travel consultant</p>
+                </div>
+                
+                <div class="flex-1 p-4 overflow-y-auto space-y-4" id="chat-messages" style="max-height: 600px;">
+                    <!-- AI Welcome Message -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-brand-bg text-sm"></i>
+                        </div>
+                        <div class="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs">
+                            <p class="text-sm" data-mock="true">Hi! I'm your AI travel consultant. Where would you like to go for your next adventure? 🌏</p>
+                        </div>
+                    </div>
+
+                    <!-- User Message Example -->
+                    <div class="flex items-start space-x-3 flex-row-reverse">
+                        <div class="w-8 h-8 bg-brand-accent/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-brand-accent text-sm"></i>
+                        </div>
+                        <div class="bg-brand-accent/10 border border-brand-accent/20 rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs">
+                            <p class="text-sm" data-mock="true">I want to visit Japan next spring</p>
+                        </div>
+                    </div>
+
+                    <!-- AI Follow-up -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-brand-bg text-sm"></i>
+                        </div>
+                        <div class="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs">
+                            <p class="text-sm mb-2" data-mock="true">Wonderful choice! Japan in spring is magical with the cherry blossoms. 🌸</p>
+                            <p class="text-sm mb-2" data-mock="true">How many days are you planning to stay?</p>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button data-event="click:selectDays" class="bg-brand-accent/20 text-brand-accent px-3 py-1 rounded-full text-xs hover:bg-brand-accent/30 transition-colors">7 days</button>
+                                <button data-event="click:selectDays" class="bg-brand-accent/20 text-brand-accent px-3 py-1 rounded-full text-xs hover:bg-brand-accent/30 transition-colors">10 days</button>
+                                <button data-event="click:selectDays" class="bg-brand-accent/20 text-brand-accent px-3 py-1 rounded-full text-xs hover:bg-brand-accent/30 transition-colors">14 days</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Selection -->
+                    <div class="flex items-start space-x-3 flex-row-reverse">
+                        <div class="w-8 h-8 bg-brand-accent/20 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-user text-brand-accent text-sm"></i>
+                        </div>
+                        <div class="bg-brand-accent/10 border border-brand-accent/20 rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs">
+                            <p class="text-sm" data-mock="true">10 days sounds perfect!</p>
+                        </div>
+                    </div>
+
+                    <!-- AI Theme Question -->
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-brand-bg text-sm"></i>
+                        </div>
+                        <div class="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-sm">
+                            <p class="text-sm mb-2" data-mock="true">Perfect! What interests you most?</p>
+                            <div class="grid grid-cols-2 gap-2 mt-3">
+                                <button data-event="click:selectTheme" class="bg-brand-accent/20 text-brand-accent px-3 py-2 rounded-lg text-xs hover:bg-brand-accent/30 transition-colors flex items-center justify-center">
+                                    <i class="fas fa-utensils mr-2"></i>Food & Culture
+                                </button>
+                                <button data-event="click:selectTheme" class="bg-brand-accent/20 text-brand-accent px-3 py-2 rounded-lg text-xs hover:bg-brand-accent/30 transition-colors flex items-center justify-center">
+                                    <i class="fas fa-torii-gate mr-2"></i>Traditional Sites
+                                </button>
+                                <button data-event="click:selectTheme" class="bg-brand-accent/20 text-brand-accent px-3 py-2 rounded-lg text-xs hover:bg-brand-accent/30 transition-colors flex items-center justify-center">
+                                    <i class="fas fa-shopping-bag mr-2"></i>Shopping
+                                </button>
+                                <button data-event="click:selectTheme" class="bg-brand-accent/20 text-brand-accent px-3 py-2 rounded-lg text-xs hover:bg-brand-accent/30 transition-colors flex items-center justify-center">
+                                    <i class="fas fa-mountain mr-2"></i>Nature & Parks
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generating Message -->
+                    <div class="flex items-start space-x-3" id="generating-message" style="display: none;">
+                        <div class="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-robot text-brand-bg text-sm"></i>
+                        </div>
+                        <div class="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-accent"></div>
+                                <p class="text-sm" data-mock="true">Creating your travel packages...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-brand-border">
+                    <div class="flex space-x-2">
+                        <input type="text" 
+                               placeholder="Type your message..." 
+                               class="flex-1 bg-brand-bg border border-brand-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-accent"
+                               data-mock="true">
+                        <button data-event="click:sendMessage" class="bg-brand-accent text-brand-bg px-4 py-2 rounded-xl hover:bg-yellow-500 transition-colors">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: ChatInterface -->
+
+            <!-- @COMPONENT: PackagePreview -->
+            <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden">
+                <div class="p-4 border-b border-brand-border">
+                    <h2 class="font-semibold text-lg">Travel Packages</h2>
+                    <p class="text-brand-mute text-sm mt-1">AI-generated options for your trip</p>
+                </div>
+
+                <div class="p-4" id="package-preview-content">
+                    <!-- Before Generation State -->
+                    <div id="pre-generation" class="text-center py-12">
+                        <div class="w-16 h-16 bg-brand-accent/10 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                            <i class="fas fa-magic text-brand-accent text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold mb-2">Packages will appear here</h3>
+                        <p class="text-brand-mute text-sm">Continue chatting to generate your travel options</p>
+                    </div>
+
+                    <!-- After Generation - Package Options -->
+                    <div id="package-options" style="display: none;">
+                        <div class="space-y-4 mb-6">
+                            <!-- Package A: Classic -->
+                            <!-- @MAP: packages.map(package => ( -->
+                            <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 hover:border-brand-accent/50 transition-colors cursor-pointer" data-event="click:selectPackage">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                                            <span class="text-white font-bold">A</span>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold" data-bind="package.name" data-mock="true">Classic Japan Tour</h3>
+                                            <p class="text-brand-mute text-sm" data-mock="true">Traditional temples, culture & cuisine</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-brand-accent" data-bind="package.budget" data-mock="true">$2,850</p>
+                                        <p class="text-brand-mute text-xs" data-mock="true">10 days</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 text-xs text-brand-mute">
+                                    <span data-mock="true"><i class="fas fa-map-marker-alt mr-1"></i>Tokyo → Kyoto → Osaka</span>
+                                    <span data-mock="true"><i class="fas fa-utensils mr-1"></i>18 dining experiences</span>
+                                    <span data-mock="true"><i class="fas fa-camera mr-1"></i>12 attractions</span>
+                                </div>
+
+                                <div class="mt-3 flex space-x-2">
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Cultural</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Food Tours</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Traditional</span>
+                                </div>
+                            </div>
+
+                            <!-- Package B: Foodie -->
+                            <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 hover:border-brand-accent/50 transition-colors cursor-pointer" data-event="click:selectPackage">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
+                                            <span class="text-white font-bold">B</span>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold" data-bind="package.name" data-mock="true">Culinary Adventure</h3>
+                                            <p class="text-brand-mute text-sm" data-mock="true">Food markets, cooking classes & fine dining</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-brand-accent" data-bind="package.budget" data-mock="true">$3,200</p>
+                                        <p class="text-brand-mute text-xs" data-mock="true">10 days</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 text-xs text-brand-mute">
+                                    <span data-mock="true"><i class="fas fa-map-marker-alt mr-1"></i>Tokyo → Osaka → Hiroshima</span>
+                                    <span data-mock="true"><i class="fas fa-utensils mr-1"></i>25 dining experiences</span>
+                                    <span data-mock="true"><i class="fas fa-chef-hat mr-1"></i>4 cooking classes</span>
+                                </div>
+
+                                <div class="mt-3 flex space-x-2">
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Foodie</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Markets</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Premium</span>
+                                </div>
+                            </div>
+
+                            <!-- Package C: Budget -->
+                            <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 hover:border-brand-accent/50 transition-colors cursor-pointer" data-event="click:selectPackage">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center">
+                                            <span class="text-white font-bold">C</span>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold" data-bind="package.name" data-mock="true">Budget Explorer</h3>
+                                            <p class="text-brand-mute text-sm" data-mock="true">Essential experiences without breaking the bank</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-bold text-brand-accent" data-bind="package.budget" data-mock="true">$1,950</p>
+                                        <p class="text-brand-mute text-xs" data-mock="true">10 days</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 text-xs text-brand-mute">
+                                    <span data-mock="true"><i class="fas fa-map-marker-alt mr-1"></i>Tokyo → Kyoto</span>
+                                    <span data-mock="true"><i class="fas fa-utensils mr-1"></i>15 dining spots</span>
+                                    <span data-mock="true"><i class="fas fa-wallet mr-1"></i>Budget friendly</span>
+                                </div>
+
+                                <div class="mt-3 flex space-x-2">
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Budget</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Essential</span>
+                                    <span class="bg-brand-accent/10 text-brand-accent px-2 py-1 rounded-full text-xs" data-mock="true">Hostels</span>
+                                </div>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+
+                        <button data-event="click:viewAllPackages" class="w-full bg-brand-accent text-brand-bg py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors">
+                            Compare All Packages
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- @END_COMPONENT: PackagePreview -->
+        </div>
+
+        <!-- @COMPONENT: PackageComparisonDashboard -->
+        <div id="comparison-view" style="display: none;" class="min-h-[calc(100vh-160px)]">
+            <div class="mb-6">
+                <button data-event="click:backToConversation" class="text-brand-mute hover:text-brand-accent transition-colors mb-4">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to conversation
+                </button>
+                <h2 class="text-2xl font-bold mb-2">Compare Travel Packages</h2>
+                <p class="text-brand-mute">Choose the perfect package for your Japan adventure</p>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                <!-- Package A Detail Card -->
+                <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
+                    <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" data-mock="true">Classic Japan Tour</h3>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">A</span>
+                        </div>
+                        <p class="text-3xl font-bold mb-1" data-mock="true">$2,850</p>
+                        <p class="text-blue-100 text-sm" data-mock="true">per person • 10 days</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Route</span>
+                                <span class="text-sm font-medium" data-mock="true">Tokyo → Kyoto → Osaka</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Accommodation</span>
+                                <span class="text-sm font-medium" data-mock="true">3-4 Star Hotels</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Dining</span>
+                                <span class="text-sm font-medium" data-mock="true">18 experiences</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2">
+                                <span class="text-brand-mute text-sm">Attractions</span>
+                                <span class="text-sm font-medium" data-mock="true">12 locations</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <h4 class="font-semibold text-sm">Highlights</h4>
+                            <ul class="space-y-2 text-sm text-brand-mute">
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Senso-ji Temple visit</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Traditional tea ceremony</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Fushimi Inari hike</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Osaka Castle tour</li>
+                            </ul>
+                        </div>
+
+                        <button data-event="click:viewPackageDetails" class="w-full bg-brand-accent text-brand-bg py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors">
+                            View Day-by-Day
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Package B Detail Card -->
+                <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
+                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" data-mock="true">Culinary Adventure</h3>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">B</span>
+                        </div>
+                        <p class="text-3xl font-bold mb-1" data-mock="true">$3,200</p>
+                        <p class="text-orange-100 text-sm" data-mock="true">per person • 10 days</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Route</span>
+                                <span class="text-sm font-medium" data-mock="true">Tokyo → Osaka → Hiroshima</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Accommodation</span>
+                                <span class="text-sm font-medium" data-mock="true">4 Star Hotels</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Dining</span>
+                                <span class="text-sm font-medium" data-mock="true">25 experiences</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2">
+                                <span class="text-brand-mute text-sm">Cooking Classes</span>
+                                <span class="text-sm font-medium" data-mock="true">4 sessions</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <h4 class="font-semibold text-sm">Highlights</h4>
+                            <ul class="space-y-2 text-sm text-brand-mute">
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Tsukiji fish market tour</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Ramen cooking class</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Michelin star dining</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Sake tasting experience</li>
+                            </ul>
+                        </div>
+
+                        <button data-event="click:viewPackageDetails" class="w-full bg-brand-accent text-brand-bg py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors">
+                            View Day-by-Day
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Package C Detail Card -->
+                <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
+                    <div class="bg-gradient-to-br from-green-500 to-teal-600 p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" data-mock="true">Budget Explorer</h3>
+                            <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-semibold">C</span>
+                        </div>
+                        <p class="text-3xl font-bold mb-1" data-mock="true">$1,950</p>
+                        <p class="text-green-100 text-sm" data-mock="true">per person • 10 days</p>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Route</span>
+                                <span class="text-sm font-medium" data-mock="true">Tokyo → Kyoto</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Accommodation</span>
+                                <span class="text-sm font-medium" data-mock="true">Hostels & Budget Hotels</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b border-brand-border">
+                                <span class="text-brand-mute text-sm">Dining</span>
+                                <span class="text-sm font-medium" data-mock="true">15 experiences</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2">
+                                <span class="text-brand-mute text-sm">Free Activities</span>
+                                <span class="text-sm font-medium" data-mock="true">8 locations</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <h4 class="font-semibold text-sm">Highlights</h4>
+                            <ul class="space-y-2 text-sm text-brand-mute">
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Free temple visits</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Public parks & gardens</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Street food tours</li>
+                                <li data-mock="true"><i class="fas fa-check text-brand-accent mr-2"></i>Local train passes</li>
+                            </ul>
+                        </div>
+
+                        <button data-event="click:viewPackageDetails" class="w-full bg-brand-accent text-brand-bg py-3 rounded-xl font-semibold hover:bg-yellow-500 transition-colors">
+                            View Day-by-Day
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-brand-card rounded-2xl border border-brand-border p-6">
+                <h3 class="font-semibold text-lg mb-4">Quick Comparison</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-brand-border">
+                                <th class="text-left py-3 text-brand-mute font-medium">Feature</th>
+                                <th class="text-center py-3 font-medium">Classic (A)</th>
+                                <th class="text-center py-3 font-medium">Culinary (B)</th>
+                                <th class="text-center py-3 font-medium">Budget (C)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-brand-mute">
+                            <tr class="border-b border-brand-border/50">
+                                <td class="py-3">Budget Range</td>
+                                <td class="text-center py-3" data-mock="true">$2,850</td>
+                                <td class="text-center py-3" data-mock="true">$3,200</td>
+                                <td class="text-center py-3 text-brand-accent" data-mock="true">$1,950</td>
+                            </tr>
+                            <tr class="border-b border-brand-border/50">
+                                <td class="py-3">Cities</td>
+                                <td class="text-center py-3" data-mock="true">3</td>
+                                <td class="text-center py-3" data-mock="true">3</td>
+                                <td class="text-center py-3" data-mock="true">2</td>
+                            </tr>
+                            <tr class="border-b border-brand-border/50">
+                                <td class="py-3">Dining Experiences</td>
+                                <td class="text-center py-3" data-mock="true">18</td>
+                                <td class="text-center py-3 text-brand-accent" data-mock="true">25</td>
+                                <td class="text-center py-3" data-mock="true">15</td>
+                            </tr>
+                            <tr>
+                                <td class="py-3">Hotel Quality</td>
+                                <td class="text-center py-3" data-mock="true">3-4 ⭐</td>
+                                <td class="text-center py-3" data-mock="true">4 ⭐</td>
+                                <td class="text-center py-3" data-mock="true">Budget</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: PackageComparisonDashboard -->
+
+        <!-- @COMPONENT: DayByDayView -->
+        <div id="itinerary-view" style="display: none;" class="min-h-[calc(100vh-160px)]">
+            <div class="mb-6">
+                <button data-event="click:backToComparison" class="text-brand-mute hover:text-brand-accent transition-colors mb-4">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to packages
+                </button>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-2" data-bind="selectedPackage.name" data-mock="true">Classic Japan Tour</h2>
+                        <p class="text-brand-mute" data-mock="true">10-day detailed itinerary • Tokyo → Kyoto → Osaka</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-brand-accent" data-bind="selectedPackage.budget" data-mock="true">$2,850</p>
+                        <p class="text-brand-mute text-sm" data-mock="true">per person</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Day List Navigation -->
+                <div class="lg:col-span-1">
+                    <div class="bg-brand-card rounded-2xl border border-brand-border p-4 sticky top-24">
+                        <h3 class="font-semibold mb-4">Days Overview</h3>
+                        <div class="space-y-2">
+                            <!-- @MAP: itinerary.days.map(day => ( -->
+                            <button data-event="click:selectDay" class="w-full text-left p-3 rounded-lg hover:bg-brand-bg/50 transition-colors border border-transparent hover:border-brand-accent/30 active">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-sm" data-bind="day.title" data-mock="true">Day 1: Tokyo Arrival</p>
+                                        <p class="text-brand-mute text-xs" data-bind="day.location" data-mock="true">Tokyo</p>
+                                    </div>
+                                    <span class="text-xs text-brand-mute" data-bind="day.activities_count" data-mock="true">4 activities</span>
+                                </div>
+                            </button>
+                            <button data-event="click:selectDay" class="w-full text-left p-3 rounded-lg hover:bg-brand-bg/50 transition-colors border border-transparent hover:border-brand-accent/30">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-sm" data-bind="day.title" data-mock="true">Day 2: Shibuya & Harajuku</p>
+                                        <p class="text-brand-mute text-xs" data-bind="day.location" data-mock="true">Tokyo</p>
+                                    </div>
+                                    <span class="text-xs text-brand-mute" data-bind="day.activities_count" data-mock="true">6 activities</span>
+                                </div>
+                            </button>
+                            <button data-event="click:selectDay" class="w-full text-left p-3 rounded-lg hover:bg-brand-bg/50 transition-colors border border-transparent hover:border-brand-accent/30">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="font-medium text-sm" data-bind="day.title" data-mock="true">Day 3: Traditional Tokyo</p>
+                                        <p class="text-brand-mute text-xs" data-bind="day.location" data-mock="true">Tokyo</p>
+                                    </div>
+                                    <span class="text-xs text-brand-mute" data-bind="day.activities_count" data-mock="true">5 activities</span>
+                                </div>
+                            </button>
+                            <!-- @END_MAP )) -->
+                            <div class="pt-2">
+                                <button data-event="click:viewAllDays" class="w-full text-center text-brand-mute text-xs hover:text-brand-accent transition-colors">
+                                    View all 10 days
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day Detail Content -->
+                <div class="lg:col-span-2">
+                    <div class="bg-brand-card rounded-2xl border border-brand-border overflow-hidden">
+                        <div class="p-6 border-b border-brand-border">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xl font-semibold" data-bind="selectedDay.title" data-mock="true">Day 1: Tokyo Arrival</h3>
+                                <div class="flex items-center space-x-2">
+                                    <button data-event="click:editDay" class="text-brand-mute hover:text-brand-accent transition-colors">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button data-event="click:addActivity" class="bg-brand-accent text-brand-bg px-3 py-1 rounded-lg text-xs font-semibold hover:bg-yellow-500 transition-colors">
+                                        <i class="fas fa-plus mr-1"></i>Add POI
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-brand-mute text-sm" data-bind="selectedDay.description" data-mock="true">Arrive in Tokyo and explore your first taste of Japanese culture</p>
+                        </div>
+
+                        <div class="p-6">
+                            <div class="space-y-6">
+                                <!-- Morning Timeline -->
+                                <div class="relative">
+                                    <div class="flex items-start space-x-4">
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-8 h-8 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center text-sm">
+                                                <i class="fas fa-sun"></i>
+                                            </div>
+                                            <div class="w-px h-16 bg-brand-border mt-2"></div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-amber-500 mb-3">Morning (9:00 AM)</h4>
+                                            <div class="space-y-3">
+                                                <!-- POI Card with Google Places Data -->
+                                                <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group">
+                                                    <button data-event="click:removePOI" class="absolute top-2 right-2 w-6 h-6 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    
+                                                    <div class="flex items-start space-x-3">
+                                                        <!-- Tokyo Station with cherry blossom trees and traditional architecture -->
+                                                        <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=80&h=80" alt="Tokyo Station" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                                        
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center justify-between mb-1">
+                                                                <h5 class="font-medium" data-bind="poi.name" data-mock="true">Tokyo Station</h5>
+                                                                <div class="flex items-center text-xs text-brand-mute">
+                                                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                                                    <span data-bind="poi.rating" data-mock="true">4.2</span>
+                                                                </div>
+                                                            </div>
+                                                            <p class="text-brand-mute text-sm" data-bind="poi.address" data-mock="true">1 Chome-1 Marunouchi, Chiyoda City, Tokyo</p>
+                                                            <p class="text-xs text-brand-mute mt-1" data-mock="true">Arrival & check-in assistance</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group">
+                                                    <button data-event="click:removePOI" class="absolute top-2 right-2 w-6 h-6 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    
+                                                    <div class="flex items-start space-x-3">
+                                                        <!-- Traditional Japanese hotel interior with tatami mats and elegant decor -->
+                                                        <img src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=80&h=80" alt="Hotel check-in" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                                        
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center justify-between mb-1">
+                                                                <h5 class="font-medium" data-mock="true">Hotel Check-in</h5>
+                                                                <span class="bg-brand-accent/20 text-brand-accent px-2 py-1 rounded-full text-xs">Accommodation</span>
+                                                            </div>
+                                                            <p class="text-brand-mute text-sm" data-mock="true">Tokyo Grand Hotel, Shibuya</p>
+                                                            <p class="text-xs text-brand-mute mt-1" data-mock="true">3-star hotel • Central location</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Afternoon Timeline -->
+                                <div class="relative">
+                                    <div class="flex items-start space-x-4">
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-8 h-8 bg-orange-500/20 text-orange-500 rounded-full flex items-center justify-center text-sm">
+                                                <i class="fas fa-sun"></i>
+                                            </div>
+                                            <div class="w-px h-20 bg-brand-border mt-2"></div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-orange-500 mb-3">Afternoon (2:00 PM)</h4>
+                                            <div class="space-y-3">
+                                                <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group">
+                                                    <button data-event="click:removePOI" class="absolute top-2 right-2 w-6 h-6 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    
+                                                    <div class="flex items-start space-x-3">
+                                                        <!-- Senso-ji Temple with traditional red lanterns and pagoda architecture -->
+                                                        <img src="https://images.unsplash.com/photo-1480796927426-f609979314bd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=80&h=80" alt="Senso-ji Temple" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                                        
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center justify-between mb-1">
+                                                                <h5 class="font-medium" data-bind="poi.name" data-mock="true">Senso-ji Temple</h5>
+                                                                <div class="flex items-center text-xs text-brand-mute">
+                                                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                                                    <span data-bind="poi.rating" data-mock="true">4.3</span>
+                                                                </div>
+                                                            </div>
+                                                            <p class="text-brand-mute text-sm" data-bind="poi.address" data-mock="true">2-3-1 Asakusa, Taito City, Tokyo</p>
+                                                            <div class="flex items-center space-x-2 mt-2">
+                                                                <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">Temple</span>
+                                                                <span class="text-xs text-brand-mute">2 hours</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Evening Timeline -->
+                                <div class="relative">
+                                    <div class="flex items-start space-x-4">
+                                        <div class="flex flex-col items-center">
+                                            <div class="w-8 h-8 bg-purple-500/20 text-purple-500 rounded-full flex items-center justify-center text-sm">
+                                                <i class="fas fa-moon"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-purple-500 mb-3">Evening (6:00 PM)</h4>
+                                            <div class="space-y-3">
+                                                <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 relative group">
+                                                    <button data-event="click:removePOI" class="absolute top-2 right-2 w-6 h-6 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    
+                                                    <div class="flex items-start space-x-3">
+                                                        <!-- Authentic ramen shop with steaming bowls and traditional Japanese counter seating -->
+                                                        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=80&h=80" alt="Ichiran Ramen" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                                        
+                                                        <div class="flex-1">
+                                                            <div class="flex items-center justify-between mb-1">
+                                                                <h5 class="font-medium" data-bind="poi.name" data-mock="true">Ichiran Ramen Shinjuku</h5>
+                                                                <div class="flex items-center text-xs text-brand-mute">
+                                                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                                                    <span data-bind="poi.rating" data-mock="true">4.4</span>
+                                                                </div>
+                                                            </div>
+                                                            <p class="text-brand-mute text-sm" data-bind="poi.address" data-mock="true">1-4-1 Kabukicho, Shinjuku City, Tokyo</p>
+                                                            <div class="flex items-center space-x-2 mt-2">
+                                                                <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs">Restaurant</span>
+                                                                <span class="text-xs text-green-400">Open now</span>
+                                                                <span class="text-xs text-brand-mute">$$</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Day Summary -->
+                            <div class="mt-6 pt-6 border-t border-brand-border">
+                                <div class="grid grid-cols-3 gap-4 text-center text-sm">
+                                    <div>
+                                        <p class="text-brand-mute">Total Activities</p>
+                                        <p class="font-semibold text-brand-accent" data-mock="true">4</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-brand-mute">Estimated Cost</p>
+                                        <p class="font-semibold text-brand-accent" data-mock="true">$285</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-brand-mute">Walking Distance</p>
+                                        <p class="font-semibold text-brand-accent" data-mock="true">3.2 km</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Continue Conversation -->
+                    <div class="mt-6 bg-brand-card rounded-2xl border border-brand-border p-6">
+                        <h3 class="font-semibold mb-3">Refine Your Itinerary</h3>
+                        <p class="text-brand-mute text-sm mb-4">Not satisfied with this day? Ask our AI to make changes:</p>
+                        <div class="flex space-x-2">
+                            <input type="text" 
+                                   placeholder="e.g., Remove the temple and add more food spots..." 
+                                   class="flex-1 bg-brand-bg border border-brand-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-accent"
+                                   data-mock="true">
+                            <button data-event="click:refineItinerary" class="bg-brand-accent text-brand-bg px-4 py-2 rounded-xl hover:bg-yellow-500 transition-colors flex-shrink-0">
+                                <i class="fas fa-magic mr-2"></i>Refine
+                            </button>
+                        </div>
+                        <p class="text-xs text-brand-mute mt-2" data-mock="true">2 refinement requests remaining</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: DayByDayView -->
+
+        <!-- @COMPONENT: AddPOIModal -->
+        <div id="add-poi-modal" style="display: none;" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div class="bg-brand-card rounded-2xl border border-brand-border max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                <div class="p-6 border-b border-brand-border">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-semibold">Add Points of Interest</h3>
+                        <button data-event="click:closeModal" class="text-brand-mute hover:text-brand-accent transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <p class="text-brand-mute text-sm mt-1">Search for places to add to your itinerary</p>
+                </div>
+
+                <div class="p-6">
+                    <!-- Search Bar -->
+                    <div class="relative mb-6">
+                        <input type="text" 
+                               placeholder="Search for restaurants, attractions, activities..." 
+                               class="w-full bg-brand-bg border border-brand-border rounded-xl px-4 py-3 pl-10 text-sm focus:outline-none focus:border-brand-accent"
+                               data-mock="true">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-mute"></i>
+                        <button data-event="click:searchPOI" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-brand-accent text-brand-bg px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-yellow-500 transition-colors">
+                            Search
+                        </button>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        <!-- @MAP: searchResults.map(poi => ( -->
+                        <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 hover:border-brand-accent/50 transition-colors">
+                            <div class="flex items-start space-x-3">
+                                <!-- Modern sushi restaurant interior with wooden counters and traditional elements -->
+                                <img src="https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Tsuta Ramen" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h5 class="font-medium" data-bind="poi.name" data-mock="true">Tsuta Ramen</h5>
+                                        <div class="flex items-center space-x-2">
+                                            <div class="flex items-center text-xs text-brand-mute">
+                                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                                <span data-bind="poi.rating" data-mock="true">4.2</span>
+                                                <span class="ml-1">(<span data-bind="poi.user_ratings_total" data-mock="true">4,381</span>)</span>
+                                            </div>
+                                            <button data-event="click:addPOIToDay" class="bg-brand-accent text-brand-bg px-2 py-1 rounded-lg text-xs font-semibold hover:bg-yellow-500 transition-colors">
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-brand-mute text-sm mb-2" data-bind="poi.address" data-mock="true">Sugamo, Toshima City, Tokyo</p>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs">Restaurant</span>
+                                        <span class="text-xs text-brand-mute">$$</span>
+                                        <span class="text-xs text-green-400">Open now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-brand-bg/30 border border-brand-border rounded-xl p-4 hover:border-brand-accent/50 transition-colors">
+                            <div class="flex items-start space-x-3">
+                                <!-- Tokyo Skytree tower against blue sky with city views -->
+                                <img src="https://images.unsplash.com/photo-1513407030348-c983a97b98d8?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Tokyo Skytree" class="w-12 h-12 rounded-lg object-cover" data-mock-image="true">
+                                
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <h5 class="font-medium" data-bind="poi.name" data-mock="true">Tokyo Skytree</h5>
+                                        <div class="flex items-center space-x-2">
+                                            <div class="flex items-center text-xs text-brand-mute">
+                                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                                <span data-bind="poi.rating" data-mock="true">4.1</span>
+                                                <span class="ml-1">(<span data-bind="poi.user_ratings_total" data-mock="true">89,234</span>)</span>
+                                            </div>
+                                            <button data-event="click:addPOIToDay" class="bg-brand-accent text-brand-bg px-2 py-1 rounded-lg text-xs font-semibold hover:bg-yellow-500 transition-colors">
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p class="text-brand-mute text-sm mb-2" data-bind="poi.address" data-mock="true">1-1-2 Oshiage, Sumida City, Tokyo</p>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">Tourist Attraction</span>
+                                        <span class="text-xs text-brand-mute">$$$</span>
+                                        <span class="text-xs text-green-400">Open now</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- @END_MAP )) -->
+                    </div>
+
+                    <!-- Time Slot Selection -->
+                    <div class="mt-6 pt-6 border-t border-brand-border">
+                        <h4 class="font-medium mb-3">Add to which time?</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button data-event="click:selectTimeSlot" class="bg-amber-500/20 text-amber-500 px-3 py-2 rounded-lg text-sm font-medium hover:bg-amber-500/30 transition-colors">
+                                <i class="fas fa-sun mr-2"></i>Morning
+                            </button>
+                            <button data-event="click:selectTimeSlot" class="bg-orange-500/20 text-orange-500 px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-500/30 transition-colors">
+                                <i class="fas fa-sun mr-2"></i>Afternoon
+                            </button>
+                            <button data-event="click:selectTimeSlot" class="bg-purple-500/20 text-purple-500 px-3 py-2 rounded-lg text-sm font-medium hover:bg-purple-500/30 transition-colors">
+                                <i class="fas fa-moon mr-2"></i>Evening
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: AddPOIModal -->
+    </div>
+
+    <!-- @COMPONENT: FloatingExportButton -->
+    <div class="fixed bottom-6 right-6 z-40">
+        <div class="relative group">
+            <button data-event="click:showExportOptions" class="bg-brand-accent text-brand-bg w-14 h-14 rounded-full shadow-lg hover:bg-yellow-500 transition-all duration-300 hover:scale-110 flex items-center justify-center">
+                <i class="fas fa-download text-lg"></i>
+            </button>
+            
+            <!-- Export Options -->
+            <div class="absolute bottom-16 right-0 bg-brand-card border border-brand-border rounded-xl shadow-xl p-3 min-w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                <div class="space-y-2">
+                    <button data-event="click:exportJSON" class="w-full text-left px-3 py-2 text-sm hover:bg-brand-bg/50 rounded-lg transition-colors">
+                        <i class="fas fa-file-code mr-2 text-brand-accent"></i>
+                        Export JSON
+                    </button>
+                    <button data-event="click:exportPDF" class="w-full text-left px-3 py-2 text-sm hover:bg-brand-bg/50 rounded-lg transition-colors">
+                        <i class="fas fa-file-pdf mr-2 text-red-400"></i>
+                        Export PDF
+                    </button>
+                    <button data-event="click:shareitinerary" class="w-full text-left px-3 py-2 text-sm hover:bg-brand-bg/50 rounded-lg transition-colors">
+                        <i class="fas fa-share mr-2 text-blue-400"></i>
+                        Share Itinerary
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- @END_COMPONENT: FloatingExportButton -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            // Application state
+            let currentView = 'conversation';
+            let conversationState = 'initial';
+            let packages = [];
+            let selectedPackage = null;
+            let selectedDay = null;
+            let refinementCount = 0;
+
+            // DOM Elements
+            const conversationView = document.getElementById('conversation-view');
+            const comparisonView = document.getElementById('comparison-view');
+            const itineraryView = document.getElementById('itinerary-view');
+            const chatMessages = document.getElementById('chat-messages');
+            const packagePreviewContent = document.getElementById('package-preview-content');
+            const addPOIModal = document.getElementById('add-poi-modal');
+
+            // Simulated Google Places API response
+            const mockPOIResults = [
+                {
+                    place_id: "ChIJd7zN_thwGGARdR7GzQf2I5k",
+                    name: "Tsuta Ramen",
+                    rating: 4.2,
+                    user_ratings_total: 4381,
+                    price_level: 2,
+                    address: "Sugamo, Toshima City, Tokyo",
+                    types: ["restaurant", "food"]
+                },
+                {
+                    place_id: "ChIJ51cu8IcIMeR2KSp7zL4JMgI",
+                    name: "Tokyo Skytree",
+                    rating: 4.1,
+                    user_ratings_total: 89234,
+                    price_level: 3,
+                    address: "1-1-2 Oshiage, Sumida City, Tokyo",
+                    types: ["tourist_attraction"]
+                }
+            ];
+
+            // Event Handlers
+            function handleThemeSelection(theme) {
+                // Add user selection message
+                addUserMessage(`I'm interested in ${theme.toLowerCase()}`);
+                
+                // Simulate AI generating packages
+                setTimeout(() => {
+                    addAIMessage("Perfect! Let me create some travel packages for you...");
+                    showGeneratingMessage();
+                    
+                    setTimeout(() => {
+                        hideGeneratingMessage();
+                        generatePackages();
+                        showPackageOptions();
+                    }, 3000);
+                }, 1000);
+            }
+
+            function generatePackages() {
+                packages = [
+                    {
+                        id: 'classic',
+                        name: 'Classic Japan Tour',
+                        budget: '$2,850',
+                        description: 'Traditional temples, culture & cuisine',
+                        type: 'classic'
+                    },
+                    {
+                        id: 'foodie',
+                        name: 'Culinary Adventure', 
+                        budget: '$3,200',
+                        description: 'Food markets, cooking classes & fine dining',
+                        type: 'foodie'
+                    },
+                    {
+                        id: 'budget',
+                        name: 'Budget Explorer',
+                        budget: '$1,950',
+                        description: 'Essential experiences without breaking the bank',
+                        type: 'budget'
+                    }
+                ];
+            }
+
+            function addUserMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start space-x-3 flex-row-reverse';
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-brand-accent/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-user text-brand-accent text-sm"></i>
+                    </div>
+                    <div class="bg-brand-accent/10 border border-brand-accent/20 rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                `;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function addAIMessage(message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start space-x-3';
+                messageDiv.innerHTML = `
+                    <div class="w-8 h-8 bg-brand-accent rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-robot text-brand-bg text-sm"></i>
+                    </div>
+                    <div class="bg-brand-bg/50 rounded-2xl rounded-tl-sm px-4 py-3 max-w-xs">
+                        <p class="text-sm">${message}</p>
+                    </div>
+                `;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function showGeneratingMessage() {
+                document.getElementById('generating-message').style.display = 'flex';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function hideGeneratingMessage() {
+                document.getElementById('generating-message').style.display = 'none';
+            }
+
+            function showPackageOptions() {
+                document.getElementById('pre-generation').style.display = 'none';
+                document.getElementById('package-options').style.display = 'block';
+            }
+
+            function switchView(view) {
+                // Hide all views
+                conversationView.style.display = 'none';
+                comparisonView.style.display = 'none';
+                itineraryView.style.display = 'none';
+                
+                // Show selected view
+                switch(view) {
+                    case 'conversation':
+                        conversationView.style.display = 'block';
+                        break;
+                    case 'comparison':
+                        comparisonView.style.display = 'block';
+                        break;
+                    case 'itinerary':
+                        itineraryView.style.display = 'block';
+                        break;
+                }
+                currentView = view;
+            }
+
+            function exportTravelPackage() {
+                const packageData = {
+                    package_name: selectedPackage?.name || "Classic Japan Tour",
+                    destination: "Japan",
+                    duration: 10,
+                    budget: selectedPackage?.budget || "$2,850",
+                    generated_at: new Date().toISOString(),
+                    itinerary: [
+                        {
+                            day: 1,
+                            date: "2024-04-01",
+                            location: "Tokyo",
+                            activities: [
+                                {
+                                    time: "morning",
+                                    name: "Tokyo Station Arrival",
+                                    type: "transportation",
+                                    address: "1 Chome-1 Marunouchi, Chiyoda City, Tokyo"
+                                },
+                                {
+                                    time: "afternoon", 
+                                    name: "Senso-ji Temple",
+                                    type: "attraction",
+                                    address: "2-3-1 Asakusa, Taito City, Tokyo",
+                                    rating: 4.3
+                                },
+                                {
+                                    time: "evening",
+                                    name: "Ichiran Ramen Shinjuku",
+                                    type: "restaurant", 
+                                    address: "1-4-1 Kabukicho, Shinjuku City, Tokyo",
+                                    rating: 4.4
+                                }
+                            ]
+                        }
+                    ]
+                };
+
+                const blob = new Blob([JSON.stringify(packageData, null, 2)], {
+                    type: 'application/json'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'travel_package.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function showAddPOIModal() {
+                addPOIModal.style.display = 'flex';
+            }
+
+            function hideAddPOIModal() {
+                addPOIModal.style.display = 'none';
+            }
+
+            // Global Event Listeners
+            document.addEventListener('click', function(e) {
+                const target = e.target.closest('[data-event]');
+                if (!target) return;
+
+                const [event, action] = target.getAttribute('data-event').split(':');
+                
+                if (event === 'click') {
+                    switch(action) {
+                        case 'selectTheme':
+                            const themeText = target.textContent.trim();
+                            handleThemeSelection(themeText);
+                            break;
+                        case 'selectPackage':
+                            // Package selection logic would go here
+                            console.log('Package selected');
+                            break;
+                        case 'viewAllPackages':
+                            switchView('comparison');
+                            break;
+                        case 'viewPackageDetails':
+                            switchView('itinerary');
+                            break;
+                        case 'backToConversation':
+                            switchView('conversation');
+                            break;
+                        case 'backToComparison':
+                            switchView('comparison');
+                            break;
+                        case 'exportPackage':
+                        case 'exportJSON':
+                            exportTravelPackage();
+                            break;
+                        case 'addActivity':
+                            showAddPOIModal();
+                            break;
+                        case 'closeModal':
+                            hideAddPOIModal();
+                            break;
+                        case 'searchPOI':
+                            // Simulate Google Places API search
+                            console.log('Searching POI...');
+                            break;
+                        case 'addPOIToDay':
+                            // Add POI to current day logic
+                            console.log('Adding POI to day...');
+                            hideAddPOIModal();
+                            break;
+                        case 'removePOI':
+                            // Remove POI from itinerary
+                            target.closest('.group').remove();
+                            break;
+                        case 'refineItinerary':
+                            // Handle refinement request
+                            if (refinementCount < 3) {
+                                refinementCount++;
+                                console.log('Refining itinerary...', refinementCount);
+                            }
+                            break;
+                    }
+                }
+            });
+
+            // Initialize app
+            console.log('Travelify AI Travel Consultant initialized');
+        })();
+    </script>
+</body>
+</html>

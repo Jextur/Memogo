@@ -1,0 +1,790 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travelify - AI Travel Package Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            bg: '#2D1B69',
+                            card: '#241557',
+                            border: '#3A2A7A',
+                            text: '#F5F5F7',
+                            muted: '#C9C9D1',
+                            accent: '#FFD700'
+                        }
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/heroicons@2.0.18/24/outline/index.js" type="module"></script>
+    <style>
+        :root {
+            --brand-bg: #2D1B69;
+            --brand-card: #241557;
+            --brand-border: #3A2A7A;
+            --brand-text: #F5F5F7;
+            --brand-muted: #C9C9D1;
+            --brand-accent: #FFD700;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s infinite;
+        }
+        
+        .chat-bubble {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .package-card {
+            transition: all 0.3s ease;
+        }
+        
+        .package-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .poi-card {
+            transition: all 0.2s ease;
+        }
+        
+        .poi-card:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="font-inter" style="background-color: var(--brand-bg); color: var(--brand-text);">
+
+    <!-- Header -->
+    <header class="border-b" style="border-color: var(--brand-border); background-color: var(--brand-card);">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--brand-accent);">
+                        <span class="text-lg font-bold" style="color: var(--brand-bg);">T</span>
+                    </div>
+                    <h1 class="text-xl font-bold" style="color: var(--brand-text);">Travelify</h1>
+                    <span class="px-2 py-1 text-xs rounded-full" style="background-color: rgba(255, 215, 0, 0.12); color: var(--brand-accent); border: 1px solid rgba(255, 215, 0, 0.35);">AI Travel Consultant</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button class="p-2 rounded-lg hover:bg-opacity-80" style="background-color: var(--brand-border);" title="Settings">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    <button class="px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                        Export Package
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Mobile Toggle Buttons -->
+        <div class="lg:hidden mb-4 flex space-x-2">
+            <button id="show-chat" class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                Chat
+            </button>
+            <button id="show-packages" class="flex-1 px-4 py-2 rounded-lg font-medium transition-colors border" style="color: var(--brand-text); border-color: var(--brand-border);">
+                Packages
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-140px)]">
+            
+            <!-- @COMPONENT: ConversationPanel -->
+            <!-- Left Panel: Conversation -->
+            <div id="chat-panel" class="flex flex-col rounded-xl border overflow-hidden" style="background-color: var(--brand-card); border-color: var(--brand-border);">
+                
+                <!-- Chat Header -->
+                <div class="px-6 py-4 border-b" style="border-color: var(--brand-border);">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background-color: var(--brand-accent);">
+                            <svg class="w-5 h-5" style="color: var(--brand-bg);" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold" style="color: var(--brand-text);">AI Travel Consultant</h3>
+                            <p class="text-sm" style="color: var(--brand-muted);">Let's plan your perfect trip</p>
+                        </div>
+                        <div class="ml-auto">
+                            <div class="flex items-center space-x-1">
+                                <div class="w-2 h-2 rounded-full" style="background-color: #10B981;"></div>
+                                <span class="text-xs" style="color: var(--brand-muted);">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="flex-1 p-6 overflow-y-auto scrollbar-hide space-y-4" id="chat-messages">
+                    
+                    <!-- AI Message -->
+                    <div class="chat-bubble">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--brand-accent);">
+                                <span class="text-sm font-medium" style="color: var(--brand-bg);">AI</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="px-4 py-3 rounded-2xl rounded-tl-md max-w-sm" style="background-color: var(--brand-bg); border: 1px solid var(--brand-border);">
+                                    <p class="text-sm" style="color: var(--brand-text);">Hi! I'm your AI travel consultant. Let's plan an amazing trip together! 🌍</p>
+                                    <p class="text-sm mt-2" style="color: var(--brand-text);">Where would you like to go, and what kind of experience are you looking for?</p>
+                                </div>
+                                <p class="text-xs mt-1 ml-4" style="color: var(--brand-muted);">Just now</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message -->
+                    <div class="chat-bubble">
+                        <div class="flex items-start space-x-3 justify-end">
+                            <div class="flex-1 flex justify-end">
+                                <div class="px-4 py-3 rounded-2xl rounded-tr-md max-w-sm" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                                    <p class="text-sm font-medium">I want to go to Japan next spring.</p>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--brand-border);">
+                                <span class="text-sm font-medium" style="color: var(--brand-text);">You</span>
+                            </div>
+                        </div>
+                        <p class="text-xs mt-1 text-right mr-11" style="color: var(--brand-muted);">2 minutes ago</p>
+                    </div>
+
+                    <!-- AI Response -->
+                    <div class="chat-bubble">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--brand-accent);">
+                                <span class="text-sm font-medium" style="color: var(--brand-bg);">AI</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="px-4 py-3 rounded-2xl rounded-tl-md max-w-sm" style="background-color: var(--brand-bg); border: 1px solid var(--brand-border);">
+                                    <p class="text-sm" style="color: var(--brand-text);">Wonderful choice! Japan in spring is magical with cherry blossoms 🌸</p>
+                                    <p class="text-sm mt-2" style="color: var(--brand-text);">A few questions to personalize your trip:</p>
+                                    <ul class="text-sm mt-2 space-y-1" style="color: var(--brand-text);">
+                                        <li>• How many days are you planning?</li>
+                                        <li>• Will you be traveling alone or with others?</li>
+                                        <li>• What's your budget range per person?</li>
+                                        <li>• Are you more interested in traditional culture, modern cities, or nature?</li>
+                                    </ul>
+                                </div>
+                                <p class="text-xs mt-1 ml-4" style="color: var(--brand-muted);">1 minute ago</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message -->
+                    <div class="chat-bubble">
+                        <div class="flex items-start space-x-3 justify-end">
+                            <div class="flex-1 flex justify-end">
+                                <div class="px-4 py-3 rounded-2xl rounded-tr-md max-w-sm" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                                    <p class="text-sm font-medium">10 days with my partner, around $3000-4000 budget. We love food and culture!</p>
+                                </div>
+                            </div>
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--brand-border);">
+                                <span class="text-sm font-medium" style="color: var(--brand-text);">You</span>
+                            </div>
+                        </div>
+                        <p class="text-xs mt-1 text-right mr-11" style="color: var(--brand-muted);">30 seconds ago</p>
+                    </div>
+
+                    <!-- AI Typing Indicator -->
+                    <div class="chat-bubble">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: var(--brand-accent);">
+                                <span class="text-sm font-medium" style="color: var(--brand-bg);">AI</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="px-4 py-3 rounded-2xl rounded-tl-md max-w-sm" style="background-color: var(--brand-bg); border: 1px solid var(--brand-border);">
+                                    <div class="flex space-x-1">
+                                        <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-muted);"></div>
+                                        <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-muted); animation-delay: 0.2s;"></div>
+                                        <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-muted); animation-delay: 0.4s;"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs mt-1 ml-4" style="color: var(--brand-muted);">AI is typing...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Chat Input -->
+                <div class="px-6 py-4 border-t" style="border-color: var(--brand-border);">
+                    <div class="flex space-x-3">
+                        <div class="flex-1 relative">
+                            <input 
+                                type="text" 
+                                placeholder="Type your message..." 
+                                class="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 transition-all" 
+                                style="background-color: var(--brand-bg); border-color: var(--brand-border); color: var(--brand-text); --tw-ring-color: var(--brand-accent);"
+                                data-mock="true"
+                                data-implementation="Connect to AI chat service"
+                            >
+                            <button class="absolute right-2 top-2 p-1.5 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-accent);">
+                                <svg class="w-4 h-4" style="color: var(--brand-bg);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- @END_COMPONENT: ConversationPanel -->
+
+            <!-- @COMPONENT: PackagePreviewPanel -->
+            <!-- Right Panel: Package Preview -->
+            <div id="packages-panel" class="hidden lg:flex flex-col rounded-xl border overflow-hidden" style="background-color: var(--brand-card); border-color: var(--brand-border);">
+                
+                <!-- Package Header -->
+                <div class="px-6 py-4 border-b" style="border-color: var(--brand-border);">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold" style="color: var(--brand-text);">Travel Packages</h3>
+                            <p class="text-sm" style="color: var(--brand-muted);">Live updates as we chat</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-2 py-1 text-xs rounded-full" style="background-color: rgba(255, 215, 0, 0.12); color: var(--brand-accent); border: 1px solid rgba(255, 215, 0, 0.35);">
+                                Generating...
+                            </span>
+                            <div class="w-2 h-2 rounded-full animate-pulse" style="background-color: var(--brand-accent);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package Options Tabs -->
+                <div class="px-6 py-3 border-b" style="border-color: var(--brand-border);">
+                    <div class="flex space-x-1" style="background-color: var(--brand-bg); padding: 4px; border-radius: 10px;">
+                        <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                            Package A - Cultural
+                        </button>
+                        <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-opacity-50" style="color: var(--brand-muted); background-color: transparent;">
+                            Package B - Foodie
+                        </button>
+                        <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-opacity-50" style="color: var(--brand-muted); background-color: transparent;">
+                            Package C - Mixed
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Package Content -->
+                <div class="flex-1 overflow-y-auto scrollbar-hide">
+                    
+                    <!-- Budget Overview -->
+                    <div class="p-6 border-b" style="border-color: var(--brand-border);">
+                        <h4 class="font-semibold mb-3" style="color: var(--brand-text);">Budget Breakdown</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm" style="color: var(--brand-muted);">Flights (2 people)</span>
+                                <span class="font-medium" style="color: var(--brand-text);">$1,400</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm" style="color: var(--brand-muted);">Accommodation (9 nights)</span>
+                                <span class="font-medium" style="color: var(--brand-text);">$1,200</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm" style="color: var(--brand-muted);">Food & Activities</span>
+                                <span class="font-medium" style="color: var(--brand-text);">$1,200</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t" style="border-color: var(--brand-border);">
+                                <span class="font-semibold" style="color: var(--brand-text);">Total Estimated</span>
+                                <span class="font-bold text-lg" style="color: var(--brand-accent);">$3,800</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accommodation Preview -->
+                    <div class="p-6 border-b" style="border-color: var(--brand-border);">
+                        <h4 class="font-semibold mb-3" style="color: var(--brand-text);">Recommended Stay</h4>
+                        <div class="rounded-lg border overflow-hidden" style="border-color: var(--brand-border);">
+                            <!-- A traditional Japanese ryokan courtyard with cherry blossoms -->
+                            <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=200" alt="Traditional Japanese ryokan with cherry blossoms" class="w-full h-32 object-cover" />
+                            <div class="p-4" style="background-color: var(--brand-bg);">
+                                <h5 class="font-medium" style="color: var(--brand-text);">Sakura Ryokan Tokyo</h5>
+                                <p class="text-sm mt-1" style="color: var(--brand-muted);">Traditional Japanese inn in Asakusa</p>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-center space-x-1">
+                                        <span class="text-sm font-medium" style="color: var(--brand-accent);">4.8</span>
+                                        <div class="flex space-x-0.5">
+                                            <svg class="w-3 h-3" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                            </svg>
+                                            <span class="text-xs" style="color: var(--brand-muted);">(324 reviews)</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-sm font-semibold" style="color: var(--brand-text);">$130/night</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Itinerary -->
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold" style="color: var(--brand-text);">Daily Itinerary</h4>
+                            <button class="text-sm hover:underline" style="color: var(--brand-accent);">View All Days</button>
+                        </div>
+
+                        <!-- Day 1 -->
+                        <div class="space-y-4">
+                            <div class="border rounded-lg p-4" style="border-color: var(--brand-border);">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-medium" style="color: var(--brand-text);">Day 1 - Arrival in Tokyo</h5>
+                                    <span class="text-sm px-2 py-1 rounded" style="background-color: var(--brand-bg); color: var(--brand-muted);">March 28</span>
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <!-- Morning -->
+                                    <div class="flex space-x-3">
+                                        <div class="w-12 text-center">
+                                            <span class="text-sm font-medium" style="color: var(--brand-accent);">9:00</span>
+                                            <p class="text-xs" style="color: var(--brand-muted);">AM</p>
+                                        </div>
+                                        <div class="flex-1 poi-card p-3 rounded-lg border" style="border-color: var(--brand-border); background-color: var(--brand-bg);">
+                                            <div class="flex items-center justify-between">
+                                                <div>
+                                                    <h6 class="font-medium text-sm" style="color: var(--brand-text);">Arrive at Narita Airport</h6>
+                                                    <p class="text-xs" style="color: var(--brand-muted);">Immigration & baggage claim</p>
+                                                </div>
+                                                <button class="p-1.5 rounded hover:bg-opacity-80 transition-colors" style="background-color: rgba(255, 215, 0, 0.12);" title="Edit this item">
+                                                    <svg class="w-3 h-3" style="color: var(--brand-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Afternoon -->
+                                    <div class="flex space-x-3">
+                                        <div class="w-12 text-center">
+                                            <span class="text-sm font-medium" style="color: var(--brand-accent);">2:00</span>
+                                            <p class="text-xs" style="color: var(--brand-muted);">PM</p>
+                                        </div>
+                                        <div class="flex-1 poi-card p-3 rounded-lg border" style="border-color: var(--brand-border); background-color: var(--brand-bg);">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3">
+                                                    <!-- A bustling Tokyo street scene in Shibuya with neon signs -->
+                                                    <img src="https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Bustling Shibuya street with neon signs" class="w-10 h-10 rounded object-cover" />
+                                                    <div>
+                                                        <h6 class="font-medium text-sm" style="color: var(--brand-text);">Shibuya Crossing</h6>
+                                                        <div class="flex items-center space-x-2">
+                                                            <span class="text-xs" style="color: var(--brand-muted);">Tourist attraction</span>
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-xs font-medium" style="color: var(--brand-accent);">4.5</span>
+                                                                <svg class="w-2.5 h-2.5" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button class="p-1.5 rounded hover:bg-opacity-80 transition-colors" style="background-color: rgba(255, 215, 0, 0.12);" title="Edit this item">
+                                                    <svg class="w-3 h-3" style="color: var(--brand-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Evening -->
+                                    <div class="flex space-x-3">
+                                        <div class="w-12 text-center">
+                                            <span class="text-sm font-medium" style="color: var(--brand-accent);">7:00</span>
+                                            <p class="text-xs" style="color: var(--brand-muted);">PM</p>
+                                        </div>
+                                        <div class="flex-1 poi-card p-3 rounded-lg border" style="border-color: var(--brand-border); background-color: var(--brand-bg);">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3">
+                                                    <!-- A cozy ramen shop interior with steaming bowls -->
+                                                    <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Cozy ramen shop with steaming bowls" class="w-10 h-10 rounded object-cover" />
+                                                    <div>
+                                                        <h6 class="font-medium text-sm" style="color: var(--brand-text);">Ichiran Ramen Shibuya</h6>
+                                                        <div class="flex items-center space-x-2">
+                                                            <span class="text-xs" style="color: var(--brand-muted);">Restaurant • ¥¥</span>
+                                                            <div class="flex items-center space-x-1">
+                                                                <span class="text-xs font-medium" style="color: var(--brand-accent);">4.4</span>
+                                                                <svg class="w-2.5 h-2.5" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button class="p-1.5 rounded hover:bg-opacity-80 transition-colors" style="background-color: rgba(255, 215, 0, 0.12);" title="Edit this item">
+                                                    <svg class="w-3 h-3" style="color: var(--brand-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="flex space-x-2 mt-4">
+                                <button class="px-3 py-2 text-sm rounded-lg border hover:bg-opacity-80 transition-colors" style="border-color: var(--brand-accent); color: var(--brand-accent); background-color: rgba(255, 215, 0, 0.12);">
+                                    + Add Activity
+                                </button>
+                                <button class="px-3 py-2 text-sm rounded-lg border hover:bg-opacity-80 transition-colors" style="border-color: var(--brand-border); color: var(--brand-muted); background-color: transparent;">
+                                    Modify Day
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package Footer -->
+                <div class="px-6 py-4 border-t" style="border-color: var(--brand-border);">
+                    <div class="flex space-x-3">
+                        <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-opacity-80" style="border-color: var(--brand-border); color: var(--brand-muted);">
+                            Compare All
+                        </button>
+                        <button class="flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-opacity-90" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                            Select Package A
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            <!-- @END_COMPONENT: PackagePreviewPanel -->
+        </div>
+
+        <!-- POI Suggestions Overlay (appears when AI finds relevant places) -->
+        <div id="poi-suggestions" class="hidden fixed inset-x-4 bottom-4 lg:inset-x-auto lg:right-4 lg:left-auto lg:w-96 rounded-xl border shadow-2xl z-50" style="background-color: var(--brand-card); border-color: var(--brand-border);">
+            <div class="p-4 border-b" style="border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-semibold" style="color: var(--brand-text);">Found Great Places!</h4>
+                    <button class="p-1 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-border);" onclick="document.getElementById('poi-suggestions').classList.add('hidden')">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <p class="text-sm mt-1" style="color: var(--brand-muted);">Based on "food and culture" preferences</p>
+            </div>
+            <div class="p-4 space-y-3 max-h-80 overflow-y-auto scrollbar-hide">
+                <!-- @MAP: suggestions.map(poi => ( -->
+                <div class="poi-card p-3 rounded-lg border cursor-pointer hover:shadow-md transition-all" style="border-color: var(--brand-border); background-color: var(--brand-bg);" data-bind="poi">
+                    <div class="flex items-center space-x-3">
+                        <!-- Traditional Tokyo temple with cherry blossoms and visitors -->
+                        <img src="https://images.unsplash.com/photo-1478436127897-769e1b3f0f36?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Traditional Tokyo temple with cherry blossoms" class="w-12 h-12 rounded object-cover" data-mock-image="true" />
+                        <div class="flex-1">
+                            <h5 class="font-medium text-sm" style="color: var(--brand-text);" data-bind="poi.name">Senso-ji Temple</h5>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="text-xs" style="color: var(--brand-muted);" data-bind="poi.type">Temple • Historic</span>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-xs font-medium" style="color: var(--brand-accent);" data-bind="poi.rating">4.6</span>
+                                    <svg class="w-2.5 h-2.5" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="p-2 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-accent);" title="Add to itinerary" data-event="click:addToItinerary">
+                            <svg class="w-4 h-4" style="color: var(--brand-bg);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- @END_MAP -->
+                
+                <div class="poi-card p-3 rounded-lg border cursor-pointer hover:shadow-md transition-all" style="border-color: var(--brand-border); background-color: var(--brand-bg);">
+                    <div class="flex items-center space-x-3">
+                        <!-- A busy Japanese fish market with fresh seafood displays -->
+                        <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Busy Japanese fish market with fresh seafood" class="w-12 h-12 rounded object-cover" />
+                        <div class="flex-1">
+                            <h5 class="font-medium text-sm" style="color: var(--brand-text);">Tsukiji Outer Market</h5>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="text-xs" style="color: var(--brand-muted);">Market • Seafood</span>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-xs font-medium" style="color: var(--brand-accent);">4.3</span>
+                                    <svg class="w-2.5 h-2.5" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="p-2 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-accent);" title="Add to itinerary">
+                            <svg class="w-4 h-4" style="color: var(--brand-bg);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="poi-card p-3 rounded-lg border cursor-pointer hover:shadow-md transition-all" style="border-color: var(--brand-border); background-color: var(--brand-bg);">
+                    <div class="flex items-center space-x-3">
+                        <!-- An elegant kaiseki dining room with traditional Japanese presentation -->
+                        <img src="https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=60&h=60" alt="Elegant kaiseki dining room with traditional presentation" class="w-12 h-12 rounded object-cover" />
+                        <div class="flex-1">
+                            <h5 class="font-medium text-sm" style="color: var(--brand-text);">Kikunoi Restaurant</h5>
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="text-xs" style="color: var(--brand-muted);">Kaiseki • ¥¥¥¥</span>
+                                <div class="flex items-center space-x-1">
+                                    <span class="text-xs font-medium" style="color: var(--brand-accent);">4.7</span>
+                                    <svg class="w-2.5 h-2.5" style="color: var(--brand-accent);" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="p-2 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-accent);" title="Add to itinerary">
+                            <svg class="w-4 h-4" style="color: var(--brand-bg);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t" style="border-color: var(--brand-border);">
+                <button class="w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-opacity-90" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                    Show More Places
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Package Comparison Modal (hidden by default) -->
+    <div id="comparison-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="max-w-6xl w-full max-h-[90vh] overflow-y-auto rounded-xl border" style="background-color: var(--brand-card); border-color: var(--brand-border);">
+            <div class="sticky top-0 px-6 py-4 border-b" style="background-color: var(--brand-card); border-color: var(--brand-border);">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold" style="color: var(--brand-text);">Compare Travel Packages</h2>
+                    <button class="p-2 rounded-lg hover:bg-opacity-80 transition-colors" style="background-color: var(--brand-border);" onclick="document.getElementById('comparison-modal').classList.add('hidden')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <!-- Package A -->
+                    <div class="package-card border rounded-xl overflow-hidden" style="border-color: var(--brand-border);">
+                        <div class="p-4 border-b" style="background-color: var(--brand-accent); border-color: var(--brand-border);">
+                            <h3 class="font-bold text-lg" style="color: var(--brand-bg);">Package A - Cultural</h3>
+                            <p class="text-sm opacity-90" style="color: var(--brand-bg);">Traditional Japan Experience</p>
+                        </div>
+                        <div class="p-4 space-y-4" style="background-color: var(--brand-bg);">
+                            <div class="text-center">
+                                <span class="text-2xl font-bold" style="color: var(--brand-accent);">$3,800</span>
+                                <p class="text-sm" style="color: var(--brand-muted);">Total for 2 people</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Temple visits</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Tea ceremony</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Kaiseki dining</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Ryokan stay</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Modern attractions</span>
+                                    <span style="color: var(--brand-muted);">○</span>
+                                </div>
+                            </div>
+                            <button class="w-full px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-opacity-90" style="background-color: var(--brand-accent); color: var(--brand-bg);">
+                                Select This Package
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Package B -->
+                    <div class="package-card border rounded-xl overflow-hidden" style="border-color: var(--brand-border);">
+                        <div class="p-4 border-b" style="background-color: var(--brand-border); border-color: var(--brand-border);">
+                            <h3 class="font-bold text-lg" style="color: var(--brand-text);">Package B - Foodie</h3>
+                            <p class="text-sm opacity-90" style="color: var(--brand-muted);">Culinary Adventure</p>
+                        </div>
+                        <div class="p-4 space-y-4" style="background-color: var(--brand-bg);">
+                            <div class="text-center">
+                                <span class="text-2xl font-bold" style="color: var(--brand-accent);">$3,600</span>
+                                <p class="text-sm" style="color: var(--brand-muted);">Total for 2 people</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Ramen tours</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Sushi classes</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Market visits</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Street food</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Cultural sites</span>
+                                    <span style="color: var(--brand-muted);">○</span>
+                                </div>
+                            </div>
+                            <button class="w-full px-4 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-opacity-80" style="border-color: var(--brand-border); color: var(--brand-text); background-color: transparent;">
+                                Select This Package
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Package C -->
+                    <div class="package-card border rounded-xl overflow-hidden" style="border-color: var(--brand-border);">
+                        <div class="p-4 border-b" style="background-color: var(--brand-border); border-color: var(--brand-border);">
+                            <h3 class="font-bold text-lg" style="color: var(--brand-text);">Package C - Mixed</h3>
+                            <p class="text-sm opacity-90" style="color: var(--brand-muted);">Best of Both Worlds</p>
+                        </div>
+                        <div class="p-4 space-y-4" style="background-color: var(--brand-bg);">
+                            <div class="text-center">
+                                <span class="text-2xl font-bold" style="color: var(--brand-accent);">$3,900</span>
+                                <p class="text-sm" style="color: var(--brand-muted);">Total for 2 people</p>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Culture & food</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Modern Tokyo</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Traditional Kyoto</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Flexible activities</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm" style="color: var(--brand-muted);">Premium options</span>
+                                    <span style="color: var(--brand-accent);">✓</span>
+                                </div>
+                            </div>
+                            <button class="w-full px-4 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-opacity-80" style="border-color: var(--brand-border); color: var(--brand-text); background-color: transparent;">
+                                Select This Package
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile panel switching
+        (function() {
+            const showChatBtn = document.getElementById('show-chat');
+            const showPackagesBtn = document.getElementById('show-packages');
+            const chatPanel = document.getElementById('chat-panel');
+            const packagesPanel = document.getElementById('packages-panel');
+
+            if (showChatBtn && showPackagesBtn) {
+                showChatBtn.addEventListener('click', () => {
+                    chatPanel.classList.remove('hidden');
+                    packagesPanel.classList.add('hidden');
+                    
+                    showChatBtn.style.backgroundColor = 'var(--brand-accent)';
+                    showChatBtn.style.color = 'var(--brand-bg)';
+                    showPackagesBtn.style.backgroundColor = 'transparent';
+                    showPackagesBtn.style.color = 'var(--brand-text)';
+                });
+
+                showPackagesBtn.addEventListener('click', () => {
+                    chatPanel.classList.add('hidden');
+                    packagesPanel.classList.remove('hidden');
+                    
+                    showPackagesBtn.style.backgroundColor = 'var(--brand-accent)';
+                    showPackagesBtn.style.color = 'var(--brand-bg)';
+                    showChatBtn.style.backgroundColor = 'transparent';
+                    showChatBtn.style.color = 'var(--brand-text)';
+                });
+            }
+        })();
+
+        // Show POI suggestions after a delay (simulating AI finding places)
+        setTimeout(() => {
+            const poiSuggestions = document.getElementById('poi-suggestions');
+            if (poiSuggestions) {
+                poiSuggestions.classList.remove('hidden');
+            }
+        }, 3000);
+
+        // Demo interactions
+        document.addEventListener('click', (e) => {
+            // Show comparison modal
+            if (e.target.textContent === 'Compare All') {
+                document.getElementById('comparison-modal').classList.remove('hidden');
+            }
+            
+            // TODO: Implement business logic for:
+            // - AI conversation flow
+            // - Real-time package generation
+            // - Google Places API integration
+            // - Package selection and export
+            // - Itinerary modifications
+        });
+
+        // Auto-scroll chat messages to bottom
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+
+</body>
+</html>
